@@ -4,13 +4,14 @@ use anyhow::Result;
 use std::{fs,io::Write};
 use filepath::FilePath;
 use std::path::PathBuf;
-#[derive(Debug, Serialize, Deserialize)]
+use std::any::type_name;
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct School {
     pub id: String,   
     pub name: String,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct TeacherNode {
     pub __typename: String,   // unused variable
 
@@ -165,13 +166,13 @@ const SCHOOL_BODY_QUERY: &str = r#"query NewSearchSchoolsQuery(
 }"#;
 
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct TeacherSearch {
     pub cursor: String,
     pub node: TeacherNode,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct ProfessorRating {
     #[serde(rename="avgRating")]
     pub avg_rating: f64,
@@ -292,7 +293,7 @@ pub async fn get_professor_rating_at_school_id(
 #[tokio::main]
 async fn main() -> Result<()> {
     // First search for a school
-    let schools = search_school("University of California").await?;
+    let schools = search_school("CUNY City College of New York").await?;
     
     if let Some(school) = schools.first() {
         println!("Found school: {} in {}, {}", 
@@ -304,38 +305,38 @@ async fn main() -> Result<()> {
         // Then search for professors at that school
         let school_id = &school.node.id;
         // println!("{:?}", school_id);
-        let professors = search_professors_at_school_id("Jean Frechet", &school.node.id).await?;
-        println!("Professors : {:?}", professors);
-        for professor in professors {
-            println!("Found professor: {} {} in {}",
-                professor.node.first_name,
-                professor.node.last_name,
-                professor.node.department
-            );
+        // let professors = search_professors_at_school_id("Jean Frechet", &school.node.id).await?;
+        // println!("Professors : {:?}", professors);
+        // for professor in professors {
+        //     println!("Found professor: {} {} in {}",
+        //         professor.node.first_name,
+        //         professor.node.last_name,
+        //         professor.node.department
+        //     );
             
-            // Get detailed rating
-            let rating = get_professor_rating_at_school_id(
-                &format!("{} {}", professor.node.first_name, professor.node.last_name),
-                &school.node.id
-            ).await?;
+        //     // Get detailed rating
+        //     let rating = get_professor_rating_at_school_id(
+        //         &format!("{} {}", professor.node.first_name, professor.node.last_name),
+        //         &school.node.id
+        //     ).await?;
             
-            println!("Rating: {}/5.0, Average Difficulty : {}/5.0", 
-                rating.avg_rating,
-                rating.avg_difficulty
-            );
-        }
+        //     println!("Rating: {}/5.0, Average Difficulty : {}/5.0", 
+        //         rating.avg_rating,
+        //         rating.avg_difficulty
+        //     );
+        // }
     }
 
     Ok(())
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Department {
     pub id: String,
     pub name: String,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct SchoolSummary {
     #[serde(rename = "campusCondition")]
     pub campus_condition: Option<f64>,
@@ -361,7 +362,7 @@ pub struct SchoolSummary {
     pub social_activities: Option<f64>,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct SchoolNode {
     #[serde(rename = "avgRatingRounded")]
     pub avg_rating_rounded: f64,
@@ -377,7 +378,7 @@ pub struct SchoolNode {
     pub summary: SchoolSummary,     // nested struct
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct SchoolSearch {
     pub cursor: String,
     pub node: SchoolNode,
@@ -421,6 +422,7 @@ pub async fn search_school(school_name: &str) -> Result<Vec<SchoolSearch>> {
     let results: Vec<SchoolSearch> = serde_json::from_value(serde_json::Value::Array(edges.to_vec()))?;
 
     // println!("Resulting output is : {:?}", results);
+    // TODO : wrap this conversion of data into a function as well, as it's being used repetititvely
     let results_json = serde_json::to_string(&results);
 
     if results_json.is_err() {
@@ -434,11 +436,33 @@ pub async fn search_school(school_name: &str) -> Result<Vec<SchoolSearch>> {
     // f.write_all(result_json_string.as_bytes()).expect("failed to write json data to file");
 
     // "unpack" the 2 values
-    let (created_file, file_path) = create_file("random.json").await;
-    save_data_to_file(created_file, &result_json_string).await;
+    let (all_search_result_file, file_path) = create_file("all_search_result.json").await;
+    let (school_name_file, file_path) = create_file(&(school_name.clone().to_owned() + ".json")).await;
+    save_data_to_file(all_search_result_file, &result_json_string).await;
+
+    for (index, data) in results.clone().into_iter().enumerate() {
+      println!("current index is : {:?}", index);
+      println!("results are {:?}", data.node.name);
+      if data.node.name == school_name {
+        let data_json = serde_json::to_string(&data);
+
+        if data_json.is_err() {
+          println!("Failed to serialize data : {:?}", data_json.unwrap_err());
+          std::process::exit(1);
+        }
+        // upon successful conversion, unwrap() the data
+        let data_json_string = data_json.unwrap();
+        save_data_to_file(school_name_file, &data_json_string).await;
+        break;
+      }
+    }
     // println
     Ok(results)
 }
+
+// async fn filter_college_by_name(college_name : &str, search_result) {
+//   unimplemented!("Not yet implemented");
+// }
 
 /// function to save the content
 /// returns nothing, inplace modification
