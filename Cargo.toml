@@ -17,6 +17,7 @@ reqwest = { version = "*", features = ["json"] }
 tokio = { version = "1", features = ["full"] }
 anyhow = "*"
 tokio-macros = "2.5.0"
+filepath = "0.2.0"
 
 [[bin]]
 name = "api-test"
