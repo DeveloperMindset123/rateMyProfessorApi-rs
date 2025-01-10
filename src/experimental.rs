@@ -125,19 +125,38 @@ pub struct ProfessorComments {
   pub would_take_again : Option<bool>
 }
 
+/// retruns ProfessorComments wrapped around Result
+/// get all comments for a specific professor based on teacher ID
+pub async fn search_professor_comments(professorID : ProfessorId) -> Result<()> {
+
+  // extract the id from the professor
+  let professor_id : String = professorID.id;
+  let client = reqwest::Client::new();
+  let payload = serde_json::json!({
+    "query" : TEACHER_COMMENTS,
+    "variables" : {"id" : professor_id}
+  });
+
+  // make the post request
+  let response = client.post(API_LINK).headers(get_headers()).json(&payload).send().await?;
+
+  if !response.status().is_success() {
+    return Err(anyhow::anyhow!("Network response from RMP not OK"));
+  }
+
+  let comments_data : serde_json::Value = response.json().await.unwrap();
+  println!("retrieved comments info : {:?}", comments_data);
+  Ok(())
+}
+
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct ProfessorId {
   id : String
 }
-// this function will take in a particular professor's name
-// this function will return the corresponding id of a professor given a school name
-// this is to ensure that users don't have to worry about unneccessary details and the code will handle all the underlying details
+/// returns the id of the professor given the professor name and school name 
 pub async fn search_professor_id(professor_name : &str, school_name : &str) -> Result<ProfessorId> {
-  // local copy of teacher_body_query
-  // TODO : experiment with both to see the resulting output
-  // adjusted to retrieve the first 1000 ratings (absurdly high intentionally so users can fetch all the relevant ratings)
-
-  // writting null is equivalent to writting None in python
+  
+  // writting null in graphql is equivalent to writting None in python
   let school_id = get_school_id(school_name).await;
   let client = reqwest::Client::new();
   let variables = serde_json::json!({
@@ -461,19 +480,21 @@ pub async fn get_professor_rating_at_school_id(
 async fn main() -> Result<()> {
 
     // example code for testing how get_school_id works
+    // passed as intended!
     let retrieved_professor_id : ProfessorId = search_professor_id("Jie Wei","CUNY City College of New York").await.unwrap();
-    println!("The retrieved school Id is --> {:?}", retrieved_professor_id);
+    println!("The retrieved school Id is --> {:?}", retrieved_professor_id.id);
+    search_professor_comments(retrieved_professor_id).await?;
 
 
     // First search for a school
     let schools = search_school("CUNY City College of New York").await?;
     // Example of using with reqwest
-    let client = reqwest::Client::new();
-    let res = client.post(&*API_LINK)
-      .json(&serde_json::from_str::<serde_json::Value>(query).unwrap())
-      .send()
-    .await?;
-  println!("Result : {:#?}", res);
+  //   let client = reqwest::Client::new();
+  //   let res = client.post(&*API_LINK)
+  //     .json(&serde_json::from_str::<serde_json::Value>(query).unwrap())
+  //     .send()
+  //   .await?;
+  // println!("Result : {:#?}", res);
     
     if let Some(school) = schools.first() {
         println!("Found school: {} in {}, {}", 
