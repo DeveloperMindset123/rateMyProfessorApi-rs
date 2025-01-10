@@ -5,6 +5,8 @@ use std::{fs,io::Write};
 use filepath::FilePath;
 use std::path::PathBuf;
 use std::any::type_name;
+// mod graphql_queries;
+// use graphql_queries::query;
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct School {
     pub id: String,   
@@ -45,6 +47,171 @@ pub struct TeacherNode {
 
 const API_LINK: &str = "https://www.ratemyprofessors.com/graphql";      // base URL
 
+
+// TODO : delete later
+// this is just experimental 
+// original query from website
+const query : &str = r#"
+{
+  "query": "query TeacherRatingsPageQuery($id: ID!) { node(id: $id) { __typename ... on Teacher { id legacyId firstName lastName department school { legacyId name city state country id } lockStatus ...StickyHeaderContent_teacher ...RatingDistributionWrapper_teacher ...TeacherInfo_teacher ...SimilarProfessors_teacher ...TeacherRatingTabs_teacher } id } } fragment StickyHeaderContent_teacher on Teacher { ...HeaderDescription_teacher ...HeaderRateButton_teacher } fragment RatingDistributionWrapper_teacher on Teacher { ...NoRatingsArea_teacher ratingsDistribution { total ...RatingDistributionChart_ratingsDistribution } } fragment TeacherInfo_teacher on Teacher { id lastName numRatings ...RatingValue_teacher ...NameTitle_teacher ...TeacherTags_teacher ...NameLink_teacher ...TeacherFeedback_teacher ...RateTeacherLink_teacher ...CompareProfessorLink_teacher } fragment SimilarProfessors_teacher on Teacher { department relatedTeachers { legacyId ...SimilarProfessorListItem_teacher id } } fragment TeacherRatingTabs_teacher on Teacher { numRatings courseCodes { courseName courseCount } ...RatingsList_teacher ...RatingsFilter_teacher } fragment RatingsList_teacher on Teacher { id legacyId lastName numRatings school { id legacyId name city state avgRating numRatings } ...Rating_teacher ...NoRatingsArea_teacher ratings(first: 20) { edges { cursor node { ...Rating_rating id __typename } } pageInfo { hasNextPage endCursor } } } fragment RatingsFilter_teacher on Teacher { courseCodes { courseCount courseName } } fragment Rating_teacher on Teacher { ...RatingFooter_teacher ...RatingSuperHeader_teacher ...ProfessorNoteSection_teacher } fragment NoRatingsArea_teacher on Teacher { lastName ...RateTeacherLink_teacher } fragment Rating_rating on Rating { comment flagStatus createdByUser teacherNote { id } ...RatingHeader_rating ...RatingSuperHeader_rating ...RatingValues_rating ...CourseMeta_rating ...RatingTags_rating ...RatingFooter_rating ...ProfessorNoteSection_rating } fragment RatingHeader_rating on Rating { legacyId date class helpfulRating clarityRating isForOnlineClass } fragment RatingSuperHeader_rating on Rating { legacyId } fragment RatingValues_rating on Rating { helpfulRating clarityRating difficultyRating } fragment CourseMeta_rating on Rating { attendanceMandatory wouldTakeAgain grade textbookUse isForOnlineClass isForCredit } fragment RatingTags_rating on Rating { ratingTags } fragment RatingFooter_rating on Rating { id comment adminReviewedAt flagStatus legacyId thumbsUpTotal thumbsDownTotal thumbs { thumbsUp thumbsDown computerId id } teacherNote { id } ...Thumbs_rating } fragment ProfessorNoteSection_rating on Rating { teacherNote { ...ProfessorNote_note id } ...ProfessorNoteEditor_rating } fragment ProfessorNote_note on TeacherNotes { comment ...ProfessorNoteHeader_note ...ProfessorNoteFooter_note } fragment ProfessorNoteEditor_rating on Rating { id legacyId class teacherNote { id teacherId comment } } fragment ProfessorNoteHeader_note on TeacherNotes { createdAt updatedAt } fragment ProfessorNoteFooter_note on TeacherNotes { legacyId flagStatus } fragment Thumbs_rating on Rating { id comment adminReviewedAt flagStatus legacyId thumbsUpTotal thumbsDownTotal thumbs { computerId thumbsUp thumbsDown id } teacherNote { id } } fragment RateTeacherLink_teacher on Teacher { legacyId numRatings lockStatus } fragment RatingFooter_teacher on Teacher { id legacyId lockStatus isProfCurrentUser ...Thumbs_teacher } fragment RatingSuperHeader_teacher on Teacher { firstName lastName legacyId school { name id } } fragment ProfessorNoteSection_teacher on Teacher { ...ProfessorNote_teacher ...ProfessorNoteEditor_teacher } fragment ProfessorNote_teacher on Teacher { ...ProfessorNoteHeader_teacher ...ProfessorNoteFooter_teacher } fragment ProfessorNoteEditor_teacher on Teacher { id } fragment ProfessorNoteHeader_teacher on Teacher { lastName } fragment ProfessorNoteFooter_teacher on Teacher { legacyId isProfCurrentUser } fragment Thumbs_teacher on Teacher { id legacyId lockStatus isProfCurrentUser } fragment SimilarProfessorListItem_teacher on RelatedTeacher { legacyId firstName lastName avgRating } fragment RatingValue_teacher on Teacher { avgRating numRatings ...NumRatingsLink_teacher } fragment NameTitle_teacher on Teacher { id firstName lastName department school { legacyId name id } ...TeacherDepartment_teacher ...TeacherBookmark_teacher } fragment TeacherTags_teacher on Teacher { lastName teacherRatingTags { legacyId tagCount tagName id } } fragment NameLink_teacher on Teacher { isProfCurrentUser id legacyId firstName lastName school { name id } } fragment TeacherFeedback_teacher on Teacher { numRatings avgDifficulty wouldTakeAgainPercent } fragment CompareProfessorLink_teacher on Teacher { legacyId } fragment TeacherDepartment_teacher on Teacher { department departmentId school { legacyId name id } } fragment TeacherBookmark_teacher on Teacher { id isSaved } fragment NumRatingsLink_teacher on Teacher { numRatings ...RateTeacherLink_teacher } fragment RatingDistributionChart_ratingsDistribution on ratingsDistribution { r1 r2 r3 r4 r5 } fragment HeaderDescription_teacher on Teacher { id legacyId firstName lastName department school { legacyId name city state id } ...TeacherTitles_teacher ...TeacherBookmark_teacher ...RateTeacherLink_teacher ...CompareProfessorLink_teacher } fragment HeaderRateButton_teacher on Teacher { ...RateTeacherLink_teacher ...CompareProfessorLink_teacher } fragment TeacherTitles_teacher on Teacher { department school { legacyId name id } }",
+  "variables": {
+    "id": "your_teacher_id_here"
+  }
+}"#;
+
+/// graphql query to get teacher rating
+/// this query should be executed after retrieving the teacher id
+const TEACHER_COMMENTS : &str = r#"
+query TeacherRatingsPageQuery($id: ID!) {
+        node(id: $id) {
+            __typename
+            ... on Teacher {
+                firstName
+                lastName
+                department
+                ratings(first: 50) {
+                    edges {
+                        node {
+                            comment
+                            class
+                            date
+                            helpfulRating
+                            difficultyRating
+                            grade
+                            wouldTakeAgain
+                            ratingTags
+                        }
+                    }
+                }
+            }
+        }
+    }
+"#;
+
+const GET_TEACHER_ID_QUERY : &str = r#"
+  query TeacherSearchResultsPageQuery(
+        $query: TeacherSearchQuery!
+        $schoolID: ID
+        $includeSchoolFilter: Boolean!
+    ) {
+        search: newSearch {
+            teachers(query: $query, first: 1) {
+                edges {
+                    node {
+                        id
+                        firstName
+                        lastName
+                    }
+                }
+            }
+        }
+        school: node(id: $schoolID) @include(if: $includeSchoolFilter) {
+            __typename
+            ... on School {
+                name
+            }
+            id
+        }
+    }
+"#;
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct ProfessorComments {
+  pub comment : String,
+  pub class_name : String,
+  pub date : String,
+  pub rating : f64,
+  pub difficulty : f64,
+  pub grade : Option<String>,
+  pub would_take_again : Option<bool>
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct ProfessorId {
+  id : String
+}
+// this function will take in a particular professor's name
+// this function will return the corresponding id of a professor given a school name
+// this is to ensure that users don't have to worry about unneccessary details and the code will handle all the underlying details
+pub async fn search_professor_id(professor_name : &str, school_name : &str) -> Result<ProfessorId> {
+  // local copy of teacher_body_query
+  // TODO : experiment with both to see the resulting output
+  // adjusted to retrieve the first 1000 ratings (absurdly high intentionally so users can fetch all the relevant ratings)
+
+  // writting null is equivalent to writting None in python
+  let school_id = get_school_id(school_name).await;
+  let client = reqwest::Client::new();
+  let variables = serde_json::json!({
+    "query" : {
+      "text" : professor_name,
+      "schoolID" : school_id,
+      "fallback" : true,
+      "departmentID" : null   
+    },
+    "schoolID" : school_id,
+    "includeSchoolFilter" : true
+  });
+
+  let payload = serde_json::json!({
+    "query" : GET_TEACHER_ID_QUERY,
+    "variables" : variables
+  });
+
+  let response = client
+                  .post(API_LINK)
+                  .headers(get_headers())
+                  .json(&payload)
+                  .send()
+                  .await?;
+
+  // error handler logic
+  if !response.status().is_success() {
+    return Err(anyhow::anyhow!("Network response from RMP not OK"));
+  }
+
+  // retrieve and extract json data
+  let search_result : serde_json::Value = response.json().await?;
+  // println!("data successfully retrieved : {:?}", search_result);
+
+  // incorrect attempt at retrieving the id
+  // let teacher_id = search_result["data"]["node"]["id"].clone();
+
+  // correct attempt at retrieving the id
+  let sample_id = search_result["data"]["search"]["teachers"]["edges"][0]["node"]["id"].clone().to_string();
+
+  let sample_id_string : &str= serde_json::from_str(&sample_id).unwrap();
+  println!("sample id is : {:?}", sample_id_string);
+  // println!("teacher is is : {teacher_id:?}");
+  Ok(ProfessorId {
+    id : sample_id_string.to_owned()
+  })
+}
+
+//  this function is a helper function of search_professor_id (it will be called within the function body)
+pub async fn get_school_id(school_name : &str) -> String {
+  let schools = search_school(school_name).await.unwrap();
+  // this is useless atm
+  // let client = reqwest::Client::new();
+  // let res = client.post(&*API_LINK)
+  //     .json(&serde_json::from_str::<serde_json::Value>(query).unwrap())
+  //     .send()
+  //   .await.unwrap();
+  // println!("Result : {:#?}", res);
+  let mut school_id : &str = "";
+  if let Some(school) = schools.first() {
+        // println!("Found school: {} in {}, {}", 
+        //     school.node.name, 
+        //     school.node.city, 
+        //     school.node.state
+        // );
+        
+        // Then search for professors at that school
+        // this is the correct school id
+      school_id = &school.node.id;
+    }
+    println!("School id retrieved successfully : {school_id:?}");
+    school_id.to_owned()
+}
+ 
 /// graphql queries should be json based strings
 const TEACHER_BODY_QUERY: &str = r#"query TeacherSearchResultsPageQuery(
   $query: TeacherSearchQuery!
@@ -213,6 +380,7 @@ pub async fn search_professors_at_school_id(
     professor_name: &str,
     school_id: &str,
 ) -> Result<Vec<TeacherSearch>> {
+    println!("current school id is : {:?}", school_id);
     let client = reqwest::Client::new();
     
     let variables = serde_json::json!({
@@ -289,11 +457,23 @@ pub async fn get_professor_rating_at_school_id(
         ),
     })
 }
-
 #[tokio::main]
 async fn main() -> Result<()> {
+
+    // example code for testing how get_school_id works
+    let retrieved_professor_id : ProfessorId = search_professor_id("Jie Wei","CUNY City College of New York").await.unwrap();
+    println!("The retrieved school Id is --> {:?}", retrieved_professor_id);
+
+
     // First search for a school
     let schools = search_school("CUNY City College of New York").await?;
+    // Example of using with reqwest
+    let client = reqwest::Client::new();
+    let res = client.post(&*API_LINK)
+      .json(&serde_json::from_str::<serde_json::Value>(query).unwrap())
+      .send()
+    .await?;
+  println!("Result : {:#?}", res);
     
     if let Some(school) = schools.first() {
         println!("Found school: {} in {}, {}", 
@@ -303,7 +483,9 @@ async fn main() -> Result<()> {
         );
         
         // Then search for professors at that school
+        // this is the correct school id
         let school_id = &school.node.id;
+        println!("current school id : {:?}", school_id);
         // println!("{:?}", school_id);
         // let professors = search_professors_at_school_id("Jean Frechet", &school.node.id).await?;
         // println!("Professors : {:?}", professors);
@@ -385,19 +567,28 @@ pub struct SchoolSearch {
 }
 
 pub async fn search_school(school_name: &str) -> Result<Vec<SchoolSearch>> {
+    // initialize the reqwest client that will be used to make the API calls
     let client = reqwest::Client::new();
-    
     let variables = serde_json::json!({
         "query": {
             "text": school_name
         }
     });
 
+
+    /**
+     * for "variables", it would be the same as writting
+     * "variables" : "query" : { "text" : school_name }
+     */
     let body = serde_json::json!({
         "query": SCHOOL_BODY_QUERY,
         "variables": variables
     });
 
+    // make the POST request to the external graphql endpoint
+    // pass in the header map returned from get_headers() function
+    // .json() used to indicate the json body, which references the graphql query
+    // .send() indicates confirmation to send the request and store the response within response variable
     let response = client
         .post(API_LINK)
         .headers(get_headers())
@@ -405,13 +596,12 @@ pub async fn search_school(school_name: &str) -> Result<Vec<SchoolSearch>> {
         .send()
         .await?;
 
+    // check and verify if the .status() of the response is successful
     if !response.status().is_success() {
         return Err(anyhow::anyhow!("Network response from RMP not OK"));
     }
 
     let data: serde_json::Value = response.json().await?;
-    // println!("{:?}", data);
-    // println!("{:?}", data["data"]["newSearch"]["schools"]);
     let edges = data["data"]["newSearch"]["schools"]["edges"]
         .as_array()
         .ok_or_else(|| anyhow::anyhow!("Failed to parse school search results"))?;
@@ -460,8 +650,15 @@ pub async fn search_school(school_name: &str) -> Result<Vec<SchoolSearch>> {
     Ok(results)
 }
 
-// async fn filter_college_by_name(college_name : &str, search_result) {
-//   unimplemented!("Not yet implemented");
+// helper function to retrieve the type
+fn print_type_of<T>(_ : &T) {
+  println!("{}", std::any::type_name::<T>());
+}
+
+// async fn filter_college_by_name(college_name : &str, search_result : Vec<SchoolSearch>) {
+//   for data in search_results.clone().into_iter().enumerate() {
+
+//   }
 // }
 
 /// function to save the content
