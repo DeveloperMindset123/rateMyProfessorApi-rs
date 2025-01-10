@@ -2,6 +2,8 @@ use reqwest::header::{HeaderMap, HeaderValue};
 use serde::{Deserialize, Serialize};
 use anyhow::Result;
 use std::{fs,io::Write};
+use filepath::FilePath;
+use std::path::PathBuf;
 #[derive(Debug, Serialize, Deserialize)]
 pub struct School {
     pub id: String,   
@@ -287,17 +289,6 @@ pub async fn get_professor_rating_at_school_id(
     })
 }
 
-// #[tokio::main]
-// async fn main() -> Result<()> {
-//     // let rating = get_professor_rating_at_school_id("Neil Henry", "YXJyYXljb25uZWN0aW9uOjA=").await?;
-//     let school = search_school("University of California Berkley").await;
-//     Ok(())
-// }
-
-// TODO : implement this
-// async fn save_to_file(returned_json) -> Result<()> {
-
-// }
 #[tokio::main]
 async fn main() -> Result<()> {
     // First search for a school
@@ -438,8 +429,26 @@ pub async fn search_school(school_name: &str) -> Result<Vec<SchoolSearch>> {
     }
     // otherwise, if serialziation is successful
     let result_json_string = results_json.unwrap();
-    println!("Serialized json string data : {}", result_json_string);
-    let mut f = fs::File::create("test.json").expect("failed to create file");
-    f.write_all(result_json_string.as_bytes()).expect("failed to write json data to file");
+    // println!("Serialized json string data : {}", result_json_string);
+    // let mut f = fs::File::create("test.json").expect("failed to create file");
+    // f.write_all(result_json_string.as_bytes()).expect("failed to write json data to file");
+
+    // "unpack" the 2 values
+    let (created_file, file_path) = create_file("random.json").await;
+    save_data_to_file(created_file, &result_json_string).await;
+    // println
     Ok(results)
+}
+
+/// function to save the content
+/// returns nothing, inplace modification
+async fn save_data_to_file(mut file : fs::File, data : &str) {
+  file.write_all(data.as_bytes()).expect("failed to write json data to file")
+}
+
+/// function returns a tuple of values -> the file and the path to the file
+async fn create_file(fileName : &str) -> (fs::File, PathBuf) {
+  let mut file = fs::File::create(fileName).unwrap();
+  let filePath = file.path().unwrap();    // Ok("/path/to/file") -> "/path/to/file"
+  (file, filePath)
 }
