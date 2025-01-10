@@ -1,5 +1,5 @@
 [package]
-name = "rateMyProfessorApi-rs"
+name = "rateMyProfessorApi_rs"
 version = "0.1.0"              # in development
 edition = "2021"
 
