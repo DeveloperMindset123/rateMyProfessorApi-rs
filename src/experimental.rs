@@ -1,16 +1,16 @@
 use reqwest::header::{HeaderMap, HeaderValue};
 use serde::{Deserialize, Serialize};
 use anyhow::Result;
-
+use std::{fs,io::Write};
 #[derive(Debug, Serialize, Deserialize)]
 pub struct School {
-    pub id: String,
+    pub id: String,   
     pub name: String,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct TeacherNode {
-    pub __typename: String,
+    pub __typename: String,   // unused variable
 
     #[serde(rename="avgDifficulty")]            // formatting, matches the current value to what the returned object type would be using this rust attribute
     pub avg_difficulty: f64,
@@ -40,40 +40,9 @@ pub struct TeacherNode {
     pub would_take_again_percent: f64,
 }
 
-// #[derive(Debug)]
-// pub struct RateMyProfessor {
-//     professor_name : &str,
-//     school_id : 
-// };
-
-// #[derive(Debug)]
-// pub struct CollegeInfo {
-//     // TODO : add values as needed
-// }
-
-// impl CollegeInfo {
-//     // define the constructor
-//     fn new(college : &str) -> Self {
-//         RateMyProfessor {
-//             college_name : college
-//         }
-//     }
-
-//     // this should return a seperate struct 
-//     fn get_college_info(&mut self) {
-//         // TODO : implement logic behind behind retrieving all the relevant information behind a particular college
-//         // TODO : this should make an API call to one of the existing functions that has been provided
-//     }
-
-//     fn change_current_college(&mut self, new_college : &str) -> RateMyProfessor {
-//         self.college_name = new_college;
-//     } 
-
-//     fn set_professor(&mut self) {
-        
-//     }
-// }
 const API_LINK: &str = "https://www.ratemyprofessors.com/graphql";      // base URL
+
+/// graphql queries should be json based strings
 const TEACHER_BODY_QUERY: &str = r#"query TeacherSearchResultsPageQuery(
   $query: TeacherSearchQuery!
   $schoolID: ID
@@ -205,8 +174,8 @@ pub struct ProfessorRating {
     #[serde(rename="avgRating")]
     pub avg_rating: f64,
 
-    // #[serde(rename="avgDifficulty")]
-    // pub avg_difficulty: f64,
+    #[serde(rename="avgDifficulty")]
+    pub avg_difficulty: f64,
 
     #[serde(rename="wouldTakeAgainPercent")]
     pub would_take_again_percent: f64,
@@ -220,6 +189,8 @@ pub struct ProfessorRating {
     pub link: String,
 }
 
+/// HeaderValue::from_static : convert a static string to a HeaderValue
+/// This function will not perform any copying, becasue the goal is to ensure that the string is checked to ensure that no invalid characters are present and that only visible ASCII characters are permitted.
 fn get_headers() -> HeaderMap {
     let mut headers = HeaderMap::new();
     headers.insert("User-Agent", HeaderValue::from_static("Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:129.0) Gecko/20100101 Firefox/129.0"));
@@ -251,7 +222,7 @@ pub async fn search_professors_at_school_id(
         "schoolID": school_id,
         "includeSchoolFilter": true
     });
-
+    
     let body = serde_json::json!({
         "query": TEACHER_BODY_QUERY,
         "variables": variables
@@ -275,9 +246,7 @@ pub async fn search_professors_at_school_id(
     let edges = data["data"]["search"]["teachers"]["edges"]
         .as_array()
         .ok_or_else(|| anyhow::anyhow!("Failed to parse teacher search results"))?;
-    // println!("the edges are : {:?}", edges);
     let results: Vec<TeacherSearch> = serde_json::from_value(serde_json::Value::Array(edges.to_vec()))?;
-    // println!("Resulting output is : {:?}", results);
     Ok(results)
 }
 
@@ -290,7 +259,7 @@ pub async fn get_professor_rating_at_school_id(
     if search_results.is_empty() {
         return Ok(ProfessorRating {
             avg_rating: -1.0,
-            // avg_difficulty: -1.0,
+            avg_difficulty: -1.0,
             would_take_again_percent: -1.0,
             num_ratings: 0,
             formatted_name: professor_name.to_string(),
@@ -303,7 +272,7 @@ pub async fn get_professor_rating_at_school_id(
     println!("resulting professor result : {:?}", professor_result);
     Ok(ProfessorRating {
         avg_rating: professor_result.node.avg_rating,
-        // avg_difficulty: professor_result.node.avg_difficulty,
+        avg_difficulty: professor_result.node.avg_difficulty,
         would_take_again_percent: professor_result.node.would_take_again_percent,
         num_ratings: professor_result.node.num_ratings,
         formatted_name: format!(
@@ -323,6 +292,11 @@ pub async fn get_professor_rating_at_school_id(
 //     // let rating = get_professor_rating_at_school_id("Neil Henry", "YXJyYXljb25uZWN0aW9uOjA=").await?;
 //     let school = search_school("University of California Berkley").await;
 //     Ok(())
+// }
+
+// TODO : implement this
+// async fn save_to_file(returned_json) -> Result<()> {
+
 // }
 #[tokio::main]
 async fn main() -> Result<()> {
@@ -354,9 +328,9 @@ async fn main() -> Result<()> {
                 &school.node.id
             ).await?;
             
-            println!("Rating: {}/5.0)", 
+            println!("Rating: {}/5.0, Average Difficulty : {}/5.0", 
                 rating.avg_rating,
-                // rating.avg_difficulty
+                rating.avg_difficulty
             );
         }
     }
@@ -456,5 +430,16 @@ pub async fn search_school(school_name: &str) -> Result<Vec<SchoolSearch>> {
     let results: Vec<SchoolSearch> = serde_json::from_value(serde_json::Value::Array(edges.to_vec()))?;
 
     // println!("Resulting output is : {:?}", results);
+    let results_json = serde_json::to_string(&results);
+
+    if results_json.is_err() {
+      println!("Error, failed to serailize data : {}", results_json.unwrap_err());
+      std::process::exit(1);
+    }
+    // otherwise, if serialziation is successful
+    let result_json_string = results_json.unwrap();
+    println!("Serialized json string data : {}", result_json_string);
+    let mut f = fs::File::create("test.json").expect("failed to create file");
+    f.write_all(result_json_string.as_bytes()).expect("failed to write json data to file");
     Ok(results)
 }
