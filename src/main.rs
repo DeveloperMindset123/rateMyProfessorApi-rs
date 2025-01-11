@@ -150,6 +150,23 @@ impl RateMyProfessor {
         experimental::save_data_to_file(file, &serde_json::to_string(&result).unwrap()).await;
         Ok(result)
     }
+
+    // simple setter that will update the current professor
+    // synchronous method is sufficieint
+    // function shouldn't return anything, should simply save
+    pub fn set_new_professor(&mut self, professor_name : &str) {
+        self.ProfessorName = Some(professor_name.to_owned());
+    }
+
+    pub fn set_new_college(&mut self, college_name : &str) {
+        self.CollegeName = college_name.to_owned();
+    }
+
+    // invoke self.set_new_professor() and self.set_new_college() : this is a higher order function
+    pub fn set_new_professor_and_college(&mut self, professor_name : &str, college_name : &str) {
+        self.set_new_college(college_name);
+        self.set_new_professor(professor_name);
+    }
 }
 
 
@@ -157,9 +174,12 @@ impl RateMyProfessor {
 #[tokio::main]
 pub async fn main() -> Result<()> {
     let mut rate_my_professor_instance = RateMyProfessor::construct_college_and_professor("City College of New York", "Douglas Troeger");
-    // let data = rate_my_professor_instance.get_college_info().await?;    // tested:worked
+    // // let data = rate_my_professor_instance.get_college_info().await?;    // tested:worked
 
-    let mut get_teacher_summary = rate_my_professor_instance.get_teacher_summary_and_save(true, "all_teacher_data.json").await?;
-    println!("{get_teacher_summary:#?}");
+    // let mut get_teacher_summary = rate_my_professor_instance.get_teacher_summary_and_save(true, "all_teacher_data.json").await?;        // tested : worked
+    // println!("{get_teacher_summary:#?}");
+    rate_my_professor_instance.set_new_professor_and_college("Hamed Fazli", "City College of New York");
+    // println!("{rate_my_professor_instance:#?}");
+
     Ok(())
 }
