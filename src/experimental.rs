@@ -6,6 +6,7 @@ use filepath::FilePath;
 use std::path::PathBuf;
 use std::any::type_name;
 use core::cmp::Ord;
+use std::ptr::null;
 // mod graphql_queries;
 // use graphql_queries::query;
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -595,8 +596,7 @@ async fn main() -> Result<()> {
         // this is the correct school id
         let school_id = &school.node.id;
         println!("current school id : {:?}", school_id);
-        get_professor_list_by_school(school_id).await?;   // tested : worked!
-        // println!("{:?}", school_id);
+        let professor_list_returned = get_professor_list_by_school(school_id).await?;   
         // let professors = search_professors_at_school_id("Jean Frechet", &school.node.id).await?;
         // println!("Professors : {:?}", professors);
         // for professor in professors {
@@ -787,22 +787,23 @@ pub async fn create_file(fileName : &str) -> (fs::File, PathBuf) {
 // define the struct that will handle retrieving the list of professors given a specific college
 // need to call upon search_school to retrieve the list
 // struct shares a lot of similarities with some of the other existing structs
+// automatically enabled to handle null data since large quantity of data is being gathered here
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ProfessorList {
-  pub id : String,
-  pub legacy_id : isize,
-  pub first_name : String,
-  pub last_name : String,
-  pub department : String,
-  pub avg_rating : f64,
-  pub num_rating : isize,
-  pub would_take_again_percent : f64,
-  pub avg_difficulty : f64,
-  pub college_name : String
+  pub id : Option<String>,
+  pub legacy_id : Option<String>,
+  pub first_name : Option<String>,
+  pub last_name : Option<String>,
+  pub department : Option<String>,
+  pub avg_rating : Option<f64>,
+  pub num_rating : Option<i32>,
+  pub avg_difficulty : Option<f64>
 }
 
 /// retrieves a list of professors for a specific college based on the college id
 /// original result type : Result<Vec<ProfessorList>>
-pub async fn get_professor_list_by_school(college_id : &str) -> Result<()> {
+pub async fn get_professor_list_by_school(college_id : &str) -> Result<Vec<ProfessorList>> {
+  let mut professor_list : Vec<ProfessorList> = Vec::new();
   let client = reqwest::Client::new();
   let payload = serde_json::json!({
     "query" : TEACHER_LIST_QUERY,
@@ -822,9 +823,52 @@ pub async fn get_professor_list_by_school(college_id : &str) -> Result<()> {
     return Err(anyhow::anyhow!("Network response from RMP not OK"));
   }
 
-  let mut professor_list : serde_json::Value = response.json().await?;
-  println!("{professor_list:#?}");
-  Ok(())
+  let mut professor_list_raw : serde_json::Value = response.json().await?;
+  
+  // break down the data to the edges array so we can itereate over it
+  let professor_list_edges = professor_list_raw["data"]["search"]["teachers"]["edges"].clone();
+
+  // for edge in professor_list_edges {
+  //   println!("{edge:#?}");
+  // }
+
+  // retrieve the length and iterate over the range to construct the vector that will store the data
+  let professor_list_edges_length = get_json_length(&professor_list_edges);
+  for curr_index in 0..professor_list_edges_length {
+
+    let unique_id : Option<String> = Some(serde_json::from_str(&professor_list_edges[curr_index]["node"]["id"].to_string())?);
+
+    let legacy_id : Option<String> = Some(serde_json::from_str(&professor_list_edges[curr_index]["node"]["id"].to_string())?);
+
+    let first_name : Option<String> = Some(serde_json::from_str(&professor_list_edges[curr_index]["node"]["firstName"].to_string())?);
+
+    let last_name : Option<String> = Some(serde_json::from_str(&professor_list_edges[curr_index]["node"]["lastName"].to_string())?);
+
+    let department : Option<String> = Some(serde_json::from_str(&professor_list_edges[curr_index]["node"]["department"].to_string())?);
+
+    let avg_rating : Option<f64> = Some(serde_json::from_str(&professor_list_edges[curr_index]["node"]["avgRating"].to_string())?);
+
+    let num_rating : Option<i32> = Some(serde_json::from_str(&professor_list_edges[curr_index]["node"]["numRatings"].to_string())?);
+
+    let avg_difficulty : Option<f64> = Some(serde_json::from_str(&professor_list_edges[curr_index]["node"]["avgDifficulty"].to_string())?);
+
+    // TODO : construct list
+    let professor_list_instance = ProfessorList {
+      id : unique_id,
+      legacy_id : legacy_id,
+      first_name : first_name,
+      last_name : last_name,
+      department : department,
+      avg_rating : avg_rating,
+      num_rating : num_rating,
+      avg_difficulty : avg_difficulty,
+    };
+    professor_list.push(professor_list_instance);
+  }
+  // println!("{professor_list:#?}");
+
+  Ok(professor_list)
+  // Ok(())
 
 
 }
