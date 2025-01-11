@@ -128,8 +128,6 @@ pub struct ProfessorComments {
 /// retruns ProfessorComments wrapped around Result
 /// get all comments for a specific professor based on teacher ID
 pub async fn search_professor_comments(professorID : ProfessorId) -> Result<Vec<ProfessorComments>> {
-
-  // extract the id from the professor
   let professor_id : String = professorID.id;
   let client = reqwest::Client::new();
   let payload = serde_json::json!({
@@ -145,9 +143,7 @@ pub async fn search_professor_comments(professorID : ProfessorId) -> Result<Vec<
   }
 
   let mut comments_data : serde_json::Value = response.json().await.unwrap();
-  // let mut comments_data_lenght = comments_data.capacity();
   let mut comments_subsection = comments_data["data"]["node"]["ratings"]["edges"].clone();
-  // let mut vector_data = serde_json::Value::Array(comments_subsection.to_vec());
   let length = get_json_length(&comments_subsection);
   println!("data length : {length:?}");
   // initialize the vector where the data will be stored
@@ -190,10 +186,7 @@ pub async fn search_professor_comments(professorID : ProfessorId) -> Result<Vec<
     ProfessorCommentsVector.push(professor_comment_instance);
     // println!("{:#?}", &comments_subsection[index]);
   }
-
-  println!("{:#?}", ProfessorCommentsVector);
-
-
+  // println!("{:#?}", ProfessorCommentsVector);
   // println!("{comments_subsection:?}");
   // for index, comment in comments_subsection.enumerate() {
 
@@ -209,6 +202,18 @@ pub async fn search_professor_comments(professorID : ProfessorId) -> Result<Vec<
   // for comments in comments_subsection.clone().into_iter() {
   //   println!("comments are : {:?}", comments);
   // }
+
+  let (professor_comments_file, _professor_comments_file_path) = create_file("professor_comments.json").await;
+  let professor_comments_vector_wrapped = serde_json::to_string(&ProfessorCommentsVector.clone());
+
+  if professor_comments_vector_wrapped.is_err() {
+    println!("Error, failed to serialize data : {}", professor_comments_vector_wrapped.unwrap_err());
+    std::process::exit(1);
+  } 
+  // if we attempt to unwrap null data, compiler will panic
+  let professor_comments_vector_unwrapped = professor_comments_vector_wrapped.unwrap();
+  println!("unwrapped data : {professor_comments_vector_unwrapped:?}");
+  save_data_to_file(professor_comments_file, &professor_comments_vector_unwrapped).await;
   Ok(ProfessorCommentsVector)
 }
 
