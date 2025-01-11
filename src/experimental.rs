@@ -144,9 +144,46 @@ pub async fn search_professor_comments(professorID : ProfessorId) -> Result<()> 
     return Err(anyhow::anyhow!("Network response from RMP not OK"));
   }
 
-  let comments_data : serde_json::Value = response.json().await.unwrap();
-  println!("retrieved comments info : {:?}", comments_data);
+  let mut comments_data : serde_json::Value = response.json().await.unwrap();
+  // let mut comments_data_lenght = comments_data.capacity();
+  let mut comments_subsection = comments_data["data"]["node"]["ratings"]["edges"].clone();
+  // let mut vector_data = serde_json::Value::Array(comments_subsection.to_vec());
+  let length = get_json_length(&comments_subsection);
+  println!("data length : {length:?}");
+  // initialize the vector where the data will be stored
+  let mut ProfessorCommentsVector : Vec<ProfessorComments> = Vec::with_capacity(length.clone());
+  for index in 0..length {
+    // example of how to retrieve the comments
+    let comments_data : String = serde_json::from_str(&comments_subsection[index]["node"]["comment"].to_string())?;
+
+    println!("{:?}", &comments_subsection[index]);
+  }
+  // println!("{comments_subsection:?}");
+  // for index, comment in comments_subsection.enumerate() {
+
+  // }
+  // let data :serde_json::Value = response.json().await?;
+  // let professor_data = data.get("data").unwrap().clone();
+  // let ratings = professor_data.get("ratings").unwrap();
+  // let edges = ratings.get("edges");
+  // println!("professor_data : {:?}", professor_data); 
+
+  // let mut more_comment_subsection = comments_subsection.as_object_mut();
+  // println!("retrieved comments info : {:?}", comments_data_lenght);
+  // for comments in comments_subsection.clone().into_iter() {
+  //   println!("comments are : {:?}", comments);
+  // }
   Ok(())
+}
+
+/// retrieve the length of the returned data value using the match operator
+/// function only handles returned datatype from serde_json that are of Array and Object type
+pub fn get_json_length(value : &serde_json::Value) -> usize {
+  match value {
+    serde_json::Value::Array(arr) => arr.len(),
+    serde_json::Value::Object(obj) => obj.len(),
+    _ => 0
+  }
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
