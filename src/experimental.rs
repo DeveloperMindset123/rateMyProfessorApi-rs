@@ -742,7 +742,7 @@ pub async fn search_school(school_name: &str) -> Result<Vec<SchoolSearch>> {
 
     for (index, data) in results.clone().into_iter().enumerate() {
       println!("current index is : {:?}", index);
-      println!("results are {:?}", data.node.name);
+      // println!("results are {:?}", data.node.name);
       if data.node.name == school_name {
         let data_json = serde_json::to_string(&data);
 
