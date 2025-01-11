@@ -5,6 +5,7 @@ use std::{fs,io::Write};
 use filepath::FilePath;
 use std::path::PathBuf;
 use std::any::type_name;
+use core::cmp::Ord;
 // mod graphql_queries;
 // use graphql_queries::query;
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -128,7 +129,7 @@ pub struct ProfessorComments {
 /// retruns ProfessorComments wrapped around Result
 /// get all comments for a specific professor based on teacher ID
 pub async fn search_professor_comments(professorID : ProfessorId) -> Result<Vec<ProfessorComments>> {
-  let professor_id : String = professorID.id;
+  let professor_id : String = professorID.Id;
   let client = reqwest::Client::new();
   let payload = serde_json::json!({
     "query" : TEACHER_COMMENTS,
@@ -145,7 +146,7 @@ pub async fn search_professor_comments(professorID : ProfessorId) -> Result<Vec<
   let mut comments_data : serde_json::Value = response.json().await.unwrap();
   let mut comments_subsection = comments_data["data"]["node"]["ratings"]["edges"].clone();
   let length = get_json_length(&comments_subsection);
-  println!("data length : {length:?}");
+  // println!("data length : {length:?}");    // no need for unneccessary info
   // initialize the vector where the data will be stored
   let mut ProfessorCommentsVector : Vec<ProfessorComments> = Vec::with_capacity(length.clone());
 
@@ -187,18 +188,6 @@ pub async fn search_professor_comments(professorID : ProfessorId) -> Result<Vec<
     // println!("{:#?}", &comments_subsection[index]);
   }
   
-
-  let (professor_comments_file, _professor_comments_file_path) = create_file("professor_comments.json").await;
-  let professor_comments_vector_wrapped = serde_json::to_string(&ProfessorCommentsVector.clone());
-
-  if professor_comments_vector_wrapped.is_err() {
-    println!("Error, failed to serialize data : {}", professor_comments_vector_wrapped.unwrap_err());
-    std::process::exit(1);
-  } 
-  // if we attempt to unwrap null data, compiler will panic
-  let professor_comments_vector_unwrapped = professor_comments_vector_wrapped.unwrap();
-  println!("unwrapped data : {professor_comments_vector_unwrapped:?}");
-  save_data_to_file(professor_comments_file, &professor_comments_vector_unwrapped).await;
   Ok(ProfessorCommentsVector)
 }
 
@@ -218,7 +207,7 @@ pub fn get_json_length(value : &serde_json::Value) -> usize {
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct ProfessorId {
-  id : String
+  pub Id : String
 }
 /// returns the id of the professor given the professor name and school name 
 pub async fn search_professor_id(professor_name : &str, school_name : &str) -> Result<ProfessorId> {
@@ -268,7 +257,7 @@ pub async fn search_professor_id(professor_name : &str, school_name : &str) -> R
   println!("sample id is : {:?}", sample_id_string);
   // println!("teacher is is : {teacher_id:?}");
   Ok(ProfessorId {
-    id : sample_id_string.to_owned()
+    Id : sample_id_string.to_owned()
   })
 }
 
@@ -425,7 +414,7 @@ pub struct TeacherSearch {
     pub node: TeacherNode,
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq, PartialOrd)]
 pub struct ProfessorRating {
     #[serde(rename="avgRating")]
     pub avg_rating: f64,
@@ -442,6 +431,9 @@ pub struct ProfessorRating {
     #[serde(rename="formattedName")]
     pub formatted_name: String,
     pub department: String,
+
+    #[serde(rename="name")]
+    pub college_name : String,    // newly added
     pub link: String,
 }
 
@@ -521,12 +513,13 @@ pub async fn get_professor_rating_at_school_id(
             num_ratings: 0,
             formatted_name: professor_name.to_string(),
             department: String::new(),
+            college_name : String::new(),
             link: String::new(),
         });
     }
 
     let professor_result = &search_results[0];
-    println!("resulting professor result : {:?}", professor_result);
+    // println!("resulting professor result : {:#?}", professor_result);    // testing
     Ok(ProfessorRating {
         avg_rating: professor_result.node.avg_rating,
         avg_difficulty: professor_result.node.avg_difficulty,
@@ -536,6 +529,7 @@ pub async fn get_professor_rating_at_school_id(
             "{} {}",
             professor_result.node.first_name, professor_result.node.last_name
         ),
+        college_name : professor_result.node.school.name.clone(),
         department: professor_result.node.department.clone(),
         link: format!(
             "https://www.ratemyprofessors.com/professor/{}",
@@ -549,7 +543,7 @@ async fn main() -> Result<()> {
     // example code for testing how get_school_id works
     // passed as intended!
     let retrieved_professor_id : ProfessorId = search_professor_id("Jie Wei","CUNY City College of New York").await.unwrap();
-    println!("The retrieved school Id is --> {:?}", retrieved_professor_id.id);
+    println!("The retrieved school Id is --> {:?}", retrieved_professor_id.Id);
     search_professor_comments(retrieved_professor_id).await?;
 
 
@@ -751,12 +745,12 @@ fn print_type_of<T>(_ : &T) {
 
 /// function to save the content
 /// returns nothing, inplace modification
-async fn save_data_to_file(mut file : fs::File, data : &str) {
+pub async fn save_data_to_file(mut file : fs::File, data : &str) {
   file.write_all(data.as_bytes()).expect("failed to write json data to file")
 }
 
 /// function returns a tuple of values -> the file and the path to the file
-async fn create_file(fileName : &str) -> (fs::File, PathBuf) {
+pub async fn create_file(fileName : &str) -> (fs::File, PathBuf) {
   let mut file = fs::File::create(fileName).unwrap();
   let filePath = file.path().unwrap();    // Ok("/path/to/file") -> "/path/to/file"
   (file, filePath)
