@@ -5,6 +5,7 @@ use std::{fs,io::Write};
 use filepath::FilePath;
 use std::path::PathBuf;
 use std::any::type_name;
+use core::cmp::Ord;
 // mod graphql_queries;
 // use graphql_queries::query;
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -425,7 +426,7 @@ pub struct TeacherSearch {
     pub node: TeacherNode,
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq, PartialOrd)]
 pub struct ProfessorRating {
     #[serde(rename="avgRating")]
     pub avg_rating: f64,
@@ -530,7 +531,7 @@ pub async fn get_professor_rating_at_school_id(
     }
 
     let professor_result = &search_results[0];
-    // println!("resulting professor result : {:#?}", professor_result);    // testing purpose
+    // println!("resulting professor result : {:#?}", professor_result);    // testing
     Ok(ProfessorRating {
         avg_rating: professor_result.node.avg_rating,
         avg_difficulty: professor_result.node.avg_difficulty,

@@ -3,7 +3,8 @@ use experimental::*;        // wildcard placeholder
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
 use tokio;
-use std::borrow::BorrowMut;
+use predicates::prelude::*;
+
 #[derive(Deserialize, Serialize, Debug, Clone)]
 pub struct RateMyProfessor {
     CollegeName : String,
@@ -37,9 +38,9 @@ impl RateMyProfessor {
 
     // NOTE : would be best to rename this as "search_professor_by_name"
 
-    // main return type : Result<Vec<TeacherSearch>>
+    // main return type : Result<Vec<ProfessorRating>>
     // retrieve_all_result is a boolean flag that will specify whether user wants just the specific data or the entire data to be returned
-    pub async fn get_teacher_summary(&mut self, retrieve_all_result : bool) -> Result<()> {
+    pub async fn get_teacher_summary(&mut self, retrieve_all_result : bool) -> Result<Vec<ProfessorRating>> {
         // TODO : needs to handle null values in the event that ProfessorName is null
         // NOTE : all inner functions must be set to await method as well, otherwise, data will not be successful during retrieval
         // should return a set of values
@@ -90,11 +91,17 @@ impl RateMyProfessor {
                 // println!("{rating_data_holder:#?}");
 
                 for rating in &rating_data_holder {
-
                     // adds 2 layer of filtering
                     if unwrap_professor_name.to_owned() == rating.formatted_name && self.CollegeName == rating.college_name {
                         result_data.push(rating.clone());
-                    }
+                    } 
+                    // else {
+                    //     if result_data.is_empty() {
+                    //         if unwrap_professor_name.to_owned() == rating.formatted_name {
+                    //             result_data.push(rating.clone());
+                    //         }
+                    //     }
+                    // }
                 }
 
                 // check and verify if the hard filtering didn't work
@@ -106,10 +113,29 @@ impl RateMyProfessor {
                         }
                     }
                 }
-                println!("{result_data:#?}");
+                result_data.sort_by(|a,b| a.partial_cmp(b).expect("Failed to sort the vector"));         // in-place sorting
+
+                // NOTE : this isn't fully working.
+                result_data.dedup();        // inplace modification removing duplicate consecutive elements
+                // let set : std::collections::BTreeSet<_> = result_data.drain(..).collect();
+                // for x in set {
+                //     if let Some(last) = result_data.last() {
+                //         if predicate(last, &x) { continue; }
+                //     }
+                //     result_data.push(x);
+                // }
+
+                // let set: BTreeSet<_> = vec.drain(..).collect();
+                // for x in set {
+                // // data comes in in sorted order so you can further
+                // // process adjacenct elements like this
+                //     if let Some(last) = vec.last() {
+                //         if predicate(last, &x) { continue; }
+                //         }
+                //     vec.push(x);
+                //     }
+                    println!("{result_data:#?}");
             }
-
-
         }
 
         // NOTE the structure of TeacherNode (Since it's nested) --> for reference to create null data handler
@@ -152,16 +178,22 @@ impl RateMyProfessor {
 //     pub node: TeacherNode,
 // }
 
-        Ok(())
+        if retrieve_all_result {
+            return Ok(rating_data_holder)
+        } else {
+            return Ok(result_data)
+        }
     }
 }
 
+
+// this should be moved to "examples" directory
 #[tokio::main]
 pub async fn main() -> Result<()> {
     let mut rate_my_professor_instance = RateMyProfessor::construct_college_and_professor("City College of New York", "Douglas Troeger");
     // let data = rate_my_professor_instance.get_college_info().await?;    // tested:worked
 
-    let mut get_teacher_summary = rate_my_professor_instance.get_teacher_summary(false).await;
-    // println!("{data:?}");
+    let mut get_teacher_summary = rate_my_professor_instance.get_teacher_summary(false).await?;
+    println!("{get_teacher_summary:#?}");
     Ok(())
 }
