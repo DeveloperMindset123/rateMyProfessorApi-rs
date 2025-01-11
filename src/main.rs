@@ -10,6 +10,7 @@ pub struct RateMyProfessor {
     ProfessorName : Option<String>
 }
 
+
 impl RateMyProfessor {
     // this will specify no professor at the moment
     // constructor 1
@@ -39,8 +40,9 @@ impl RateMyProfessor {
     // main return type : Result<Vec<TeacherSearch>>
     pub async fn get_teacher_summary(&mut self) -> Result<()> {
         // TODO : needs to handle null values in the event that ProfessorName is null
+        // NOTE : all inner functions must be set to await method as well, otherwise, data will not be successful during retrieval
         // should return a set of values
-        let result_data : Vec<TeacherSearch> = Vec::new();
+        let mut result_data : Vec<ProfessorRating> = Vec::new();
 
         // check if the name of the profesosr is empty or not
         // TODO : test if this can bypass the return type explicitly
@@ -54,10 +56,10 @@ impl RateMyProfessor {
             // search for the school once again
             let schools = experimental::search_school(&self.CollegeName).await;
             let unwrap_professor_name = self.ProfessorName.clone().unwrap();
-            
+            let mut rating_data_holder : Vec<ProfessorRating> = Vec::new();
             // extract the school ID
             if let Some(school) = schools.unwrap().first() {
-                println!("Found school : {} in {}, {}", school.node.name, school.node.city, school.node.city);
+                // println!("Found school : {} in {}, {}", school.node.name, school.node.city, school.node.city);
                 let school_id = &school.node.id;
 
                 // pass in the school ID to search for the professor
@@ -65,10 +67,33 @@ impl RateMyProfessor {
                 // then pass in their corresponding data into the get method
                 // the search function takes in 2 parameters : name of professor and the corresponding school_id
                 let professor_list = experimental::search_professors_at_school_id(&unwrap_professor_name, school_id).await;
-                println!("\n\nsearch result of professor : {:?}", &professor_list.unwrap());        // for testing 
 
-                // since professor_list returns a list, we need to iterate over it to retrieve the actual list of professors
-                // println!("{professor_list:?}");
+
+                // NOTE : Result<> does not have Debug trait, it must be unwrapped in order to print it out successfully.
+                // println!("\n\nsearch result of professor : {:?}", professor_list.unwrap());        // for testing
+
+                // iterate over the professor list
+
+                for professor in &professor_list?.clone() {
+
+                    // get_professor_rating_at_school_id takes in two parameters, the name of the professor, which search_professors_at_school_id returns in the format of first and last name which needs to be merged back together
+
+                    // as well as referencing the school_id (the type is &str)
+                    let current_professor_rating = experimental::get_professor_rating_at_school_id(&format!("{} {}", professor.node.first_name, professor.node.last_name), &school_id).await.unwrap();
+
+                    // println!("{:#?}", current_professor_rating);
+                    rating_data_holder.push(current_professor_rating);
+
+                }
+                
+                // println!("{rating_data_holder:?}");
+
+                // NOTE : implement the corresponding filtering logic
+                for rating in rating_data_holder {
+                    if unwrap_professor_name.to_owned() == rating.formatted_name {
+                        result_data.push(rating.clone());
+                    }
+                }
             }
 
 
@@ -121,7 +146,7 @@ impl RateMyProfessor {
 #[tokio::main]
 pub async fn main() -> Result<()> {
     let mut rate_my_professor_instance = RateMyProfessor::construct_college_and_professor("CUNY City College of New York", "Douglas Troeger");
-    let data = rate_my_professor_instance.get_college_info().await?;    // tested:worked
+    // let data = rate_my_professor_instance.get_college_info().await?;    // tested:worked
 
     let mut get_teacher_summary = rate_my_professor_instance.get_teacher_summary().await;
     // println!("{data:?}");
