@@ -119,17 +119,15 @@ pub struct ProfessorComments {
   pub comment : String,
   pub class_name : String,
   pub date : String,
-  pub rating : f64,
+  pub rating_tags : String,
   pub difficulty : f64,
-  pub grade : Option<String>,
-  pub would_take_again : Option<bool>
+  pub grade : String,
+  pub would_take_again : bool
 }
 
 /// retruns ProfessorComments wrapped around Result
 /// get all comments for a specific professor based on teacher ID
-pub async fn search_professor_comments(professorID : ProfessorId) -> Result<()> {
-
-  // extract the id from the professor
+pub async fn search_professor_comments(professorID : ProfessorId) -> Result<Vec<ProfessorComments>> {
   let professor_id : String = professorID.id;
   let client = reqwest::Client::new();
   let payload = serde_json::json!({
@@ -144,9 +142,78 @@ pub async fn search_professor_comments(professorID : ProfessorId) -> Result<()> 
     return Err(anyhow::anyhow!("Network response from RMP not OK"));
   }
 
-  let comments_data : serde_json::Value = response.json().await.unwrap();
-  println!("retrieved comments info : {:?}", comments_data);
-  Ok(())
+  let mut comments_data : serde_json::Value = response.json().await.unwrap();
+  let mut comments_subsection = comments_data["data"]["node"]["ratings"]["edges"].clone();
+  let length = get_json_length(&comments_subsection);
+  println!("data length : {length:?}");
+  // initialize the vector where the data will be stored
+  let mut ProfessorCommentsVector : Vec<ProfessorComments> = Vec::with_capacity(length.clone());
+
+  // TODO : Save returned data to a JSON file as well for cleanliness
+  for index in 0..length {
+    // example of how to retrieve the comments
+    let comments_data : String = serde_json::from_str(&comments_subsection[index]["node"]["comment"].to_string())?;
+
+    // construct the struct
+    // TODO : define a function to abstract away the repetitivesness for serde_json::from_str() section
+    let would_take_again : &serde_json::Value = &comments_subsection[index]["node"]["wouldTakeAgain"];
+    // println!("Would take again ? : {would_take_again:?}");
+    // if *would_take_again == serde_json::Value::Null {
+    //   println!("would_take_again is null");
+    // } else {
+    //   println!("would_take_again isn't null");
+    // }
+    let extracted_comments_data : String = serde_json::from_str(&comments_subsection[index]["node"]["comment"].to_string())?;
+
+    let extracted_grade : String = serde_json::from_str(&comments_subsection[index]["node"]["grade"].to_string())?;
+
+    let extracted_date : String = serde_json::from_str(&comments_subsection[index]["node"]["date"].to_string())?;
+
+    let extracted_rating_tags : String = serde_json::from_str(&comments_subsection[index]["node"]["ratingTags"].to_string())?;
+
+    let extracted_difficulty : f64 = serde_json::from_str(&comments_subsection[index]["node"]["difficultyRating"].to_string())?;
+    
+    let professor_comment_instance = ProfessorComments {
+      comment : extracted_comments_data,
+      class_name : serde_json::from_str(&comments_subsection[index]["node"]["class"].to_string())?,
+      date : extracted_date,
+      rating_tags : if extracted_rating_tags == "".to_owned() { "N/A".to_owned() } else { extracted_rating_tags },
+      difficulty : extracted_difficulty,
+      grade : if extracted_grade == "".to_owned() { "Not Available".to_owned()} else { extracted_grade },
+
+      would_take_again : if comments_subsection[index]["node"]["wouldTakeAgain"] == serde_json::Value::Null { false} else {true}
+    };
+    ProfessorCommentsVector.push(professor_comment_instance);
+    // println!("{:#?}", &comments_subsection[index]);
+  }
+  
+
+  let (professor_comments_file, _professor_comments_file_path) = create_file("professor_comments.json").await;
+  let professor_comments_vector_wrapped = serde_json::to_string(&ProfessorCommentsVector.clone());
+
+  if professor_comments_vector_wrapped.is_err() {
+    println!("Error, failed to serialize data : {}", professor_comments_vector_wrapped.unwrap_err());
+    std::process::exit(1);
+  } 
+  // if we attempt to unwrap null data, compiler will panic
+  let professor_comments_vector_unwrapped = professor_comments_vector_wrapped.unwrap();
+  println!("unwrapped data : {professor_comments_vector_unwrapped:?}");
+  save_data_to_file(professor_comments_file, &professor_comments_vector_unwrapped).await;
+  Ok(ProfessorCommentsVector)
+}
+
+// pub parse_json_data(json_data : serde_json::Value, ternary : bool) -> ProfessorComments {
+
+// }
+
+/// retrieve the length of the returned data value using the match operator
+/// function only handles returned datatype from serde_json that are of Array and Object type
+pub fn get_json_length(value : &serde_json::Value) -> usize {
+  match value {
+    serde_json::Value::Array(arr) => arr.len(),
+    serde_json::Value::Object(obj) => obj.len(),
+    _ => 0
+  }
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]

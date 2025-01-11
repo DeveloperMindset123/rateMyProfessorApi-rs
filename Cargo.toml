@@ -1,6 +1,6 @@
 [package]
-name = "rateMyProfessorApi-rs"
-version = "0.1.0"              # in development
+name = "rate_my_professor_api_rs"
+version = "0.1.0"                 # in development
 edition = "2021"
 
 [dependencies]
@@ -27,4 +27,11 @@ path = "src/api.rs"
 name = "api-experimental"
 path = "src/experimental.rs"
 
+[[bin]]
+name = "test-main"
+path = "src/main.rs"
+
+[lib]
+name = "rateMyProfessorApi_rs"
+path = "src/lib.rs"
 # /Users/ayandas/Library/Application Support/Postgres/RateMyProfessorPackage
