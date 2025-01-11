@@ -757,12 +757,12 @@ fn print_type_of<T>(_ : &T) {
 
 /// function to save the content
 /// returns nothing, inplace modification
-async fn save_data_to_file(mut file : fs::File, data : &str) {
+pub async fn save_data_to_file(mut file : fs::File, data : &str) {
   file.write_all(data.as_bytes()).expect("failed to write json data to file")
 }
 
 /// function returns a tuple of values -> the file and the path to the file
-async fn create_file(fileName : &str) -> (fs::File, PathBuf) {
+pub async fn create_file(fileName : &str) -> (fs::File, PathBuf) {
   let mut file = fs::File::create(fileName).unwrap();
   let filePath = file.path().unwrap();    // Ok("/path/to/file") -> "/path/to/file"
   (file, filePath)

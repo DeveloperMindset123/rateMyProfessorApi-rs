@@ -69,13 +69,6 @@ impl RateMyProfessor {
                 // then pass in their corresponding data into the get method
                 // the search function takes in 2 parameters : name of professor and the corresponding school_id
                 let professor_list = experimental::search_professors_at_school_id(&unwrap_professor_name, school_id).await;
-
-
-                // NOTE : Result<> does not have Debug trait, it must be unwrapped in order to print it out successfully.
-                // println!("\n\nsearch result of professor : {:?}", professor_list.unwrap());        // for testing
-
-                // iterate over the professor list
-
                 for professor in &professor_list?.clone() {
 
                     // get_professor_rating_at_school_id takes in two parameters, the name of the professor, which search_professors_at_school_id returns in the format of first and last name which needs to be merged back together
@@ -138,51 +131,24 @@ impl RateMyProfessor {
             }
         }
 
-        // NOTE the structure of TeacherNode (Since it's nested) --> for reference to create null data handler
-// #[derive(Debug, Serialize, Deserialize, Clone)]
-// pub struct TeacherNode {
-//     pub __typename: String,   // unused variable
 
-//     #[serde(rename="avgDifficulty")]            // formatting, matches the current value to what the returned object type would be using this rust attribute
-//     pub avg_difficulty: f64,
-
-//     #[serde(rename="avgRating")]
-//     pub avg_rating: f64,
-//     pub department: String,
-
-//     #[serde(rename="firstName")]
-//     pub first_name: String,
-//     pub id: String,
-
-//     #[serde(rename="isSaved")]
-//     pub is_saved: bool,
-
-//     #[serde(rename="lastName")]
-//     pub last_name: String,
-
-//     #[serde(rename="legacyId")]
-//     pub legacy_id: i64,
-
-//     #[serde(rename="numRatings")]
-//     pub num_ratings: i32,
-//     pub school: School,
-
-//     #[serde(rename="wouldTakeAgainPercent")]
-//     pub would_take_again_percent: f64,
-// }
-
-// previous struct is a dependency on this struct
-// #[derive(Debug, Serialize, Deserialize, Clone)]
-// pub struct TeacherSearch {
-//     pub cursor: String,
-//     pub node: TeacherNode,
-// }
-
+        // logic based on boolean flag
         if retrieve_all_result {
             return Ok(rating_data_holder)
         } else {
             return Ok(result_data)
         }
+    }
+
+    // this will do all the same functionality as get_teacher_summary but also save the resulting data
+    // user can specify the file path they want in string format
+    // everything needs to be asynchronous, otherwise, data retrieval will not be successful
+    // will create the file in the immediate directory
+    pub async fn get_teacher_summary_and_save(&mut self, retrieve_all_result : bool, file_name : &str) -> Result<Vec<ProfessorRating>> {
+        let result = self.get_teacher_summary(retrieve_all_result).await?;
+        let (file, file_path) = experimental::create_file(file_name).await;
+        experimental::save_data_to_file(file, &serde_json::to_string(&result).unwrap()).await;
+        Ok(result)
     }
 }
 
@@ -193,7 +159,7 @@ pub async fn main() -> Result<()> {
     let mut rate_my_professor_instance = RateMyProfessor::construct_college_and_professor("City College of New York", "Douglas Troeger");
     // let data = rate_my_professor_instance.get_college_info().await?;    // tested:worked
 
-    let mut get_teacher_summary = rate_my_professor_instance.get_teacher_summary(false).await?;
+    let mut get_teacher_summary = rate_my_professor_instance.get_teacher_summary_and_save(true, "all_teacher_data.json").await?;
     println!("{get_teacher_summary:#?}");
     Ok(())
 }
