@@ -442,6 +442,9 @@ pub struct ProfessorRating {
     #[serde(rename="formattedName")]
     pub formatted_name: String,
     pub department: String,
+
+    #[serde(rename="name")]
+    pub college_name : String,    // newly added
     pub link: String,
 }
 
@@ -521,12 +524,13 @@ pub async fn get_professor_rating_at_school_id(
             num_ratings: 0,
             formatted_name: professor_name.to_string(),
             department: String::new(),
+            college_name : String::new(),
             link: String::new(),
         });
     }
 
     let professor_result = &search_results[0];
-    println!("resulting professor result : {:?}", professor_result);
+    // println!("resulting professor result : {:#?}", professor_result);    // testing purpose
     Ok(ProfessorRating {
         avg_rating: professor_result.node.avg_rating,
         avg_difficulty: professor_result.node.avg_difficulty,
@@ -536,6 +540,7 @@ pub async fn get_professor_rating_at_school_id(
             "{} {}",
             professor_result.node.first_name, professor_result.node.last_name
         ),
+        college_name : professor_result.node.school.name.clone(),
         department: professor_result.node.department.clone(),
         link: format!(
             "https://www.ratemyprofessors.com/professor/{}",

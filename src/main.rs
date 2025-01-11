@@ -3,7 +3,7 @@ use experimental::*;        // wildcard placeholder
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
 use tokio;
-
+use std::borrow::BorrowMut;
 #[derive(Deserialize, Serialize, Debug, Clone)]
 pub struct RateMyProfessor {
     CollegeName : String,
@@ -38,11 +38,13 @@ impl RateMyProfessor {
     // NOTE : would be best to rename this as "search_professor_by_name"
 
     // main return type : Result<Vec<TeacherSearch>>
-    pub async fn get_teacher_summary(&mut self) -> Result<()> {
+    // retrieve_all_result is a boolean flag that will specify whether user wants just the specific data or the entire data to be returned
+    pub async fn get_teacher_summary(&mut self, retrieve_all_result : bool) -> Result<()> {
         // TODO : needs to handle null values in the event that ProfessorName is null
         // NOTE : all inner functions must be set to await method as well, otherwise, data will not be successful during retrieval
         // should return a set of values
-        let mut result_data : Vec<ProfessorRating> = Vec::new();
+        let mut result_data : Vec<ProfessorRating> = Vec::new();        // stores filtered results
+        let mut rating_data_holder : Vec<ProfessorRating> = Vec::new();     // stores all results
 
         // check if the name of the profesosr is empty or not
         // TODO : test if this can bypass the return type explicitly
@@ -56,7 +58,6 @@ impl RateMyProfessor {
             // search for the school once again
             let schools = experimental::search_school(&self.CollegeName).await;
             let unwrap_professor_name = self.ProfessorName.clone().unwrap();
-            let mut rating_data_holder : Vec<ProfessorRating> = Vec::new();
             // extract the school ID
             if let Some(school) = schools.unwrap().first() {
                 // println!("Found school : {} in {}, {}", school.node.name, school.node.city, school.node.city);
@@ -86,14 +87,26 @@ impl RateMyProfessor {
 
                 }
                 
-                // println!("{rating_data_holder:?}");
+                // println!("{rating_data_holder:#?}");
 
-                // NOTE : implement the corresponding filtering logic
-                for rating in rating_data_holder {
-                    if unwrap_professor_name.to_owned() == rating.formatted_name {
+                for rating in &rating_data_holder {
+
+                    // adds 2 layer of filtering
+                    if unwrap_professor_name.to_owned() == rating.formatted_name && self.CollegeName == rating.college_name {
                         result_data.push(rating.clone());
                     }
                 }
+
+                // check and verify if the hard filtering didn't work
+                // then we apply a single layer of filtering instead
+                if result_data.is_empty() {
+                    for rating in &rating_data_holder {
+                        if unwrap_professor_name.clone().to_owned() == rating.formatted_name.clone() {
+                            result_data.push(rating.clone())
+                        }
+                    }
+                }
+                println!("{result_data:#?}");
             }
 
 
@@ -145,10 +158,10 @@ impl RateMyProfessor {
 
 #[tokio::main]
 pub async fn main() -> Result<()> {
-    let mut rate_my_professor_instance = RateMyProfessor::construct_college_and_professor("CUNY City College of New York", "Douglas Troeger");
+    let mut rate_my_professor_instance = RateMyProfessor::construct_college_and_professor("City College of New York", "Douglas Troeger");
     // let data = rate_my_professor_instance.get_college_info().await?;    // tested:worked
 
-    let mut get_teacher_summary = rate_my_professor_instance.get_teacher_summary().await;
+    let mut get_teacher_summary = rate_my_professor_instance.get_teacher_summary(false).await;
     // println!("{data:?}");
     Ok(())
 }
