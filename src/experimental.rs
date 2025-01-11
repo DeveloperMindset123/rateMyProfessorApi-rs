@@ -146,7 +146,7 @@ pub async fn search_professor_comments(professorID : ProfessorId) -> Result<Vec<
   let mut comments_data : serde_json::Value = response.json().await.unwrap();
   let mut comments_subsection = comments_data["data"]["node"]["ratings"]["edges"].clone();
   let length = get_json_length(&comments_subsection);
-  println!("data length : {length:?}");
+  // println!("data length : {length:?}");    // no need for unneccessary info
   // initialize the vector where the data will be stored
   let mut ProfessorCommentsVector : Vec<ProfessorComments> = Vec::with_capacity(length.clone());
 
@@ -188,18 +188,6 @@ pub async fn search_professor_comments(professorID : ProfessorId) -> Result<Vec<
     // println!("{:#?}", &comments_subsection[index]);
   }
   
-
-  // let (professor_comments_file, _professor_comments_file_path) = create_file("professor_comments.json").await;
-  // let professor_comments_vector_wrapped = serde_json::to_string(&ProfessorCommentsVector.clone());
-
-  // if professor_comments_vector_wrapped.is_err() {
-  //   println!("Error, failed to serialize data : {}", professor_comments_vector_wrapped.unwrap_err());
-  //   std::process::exit(1);
-  // } 
-  // // if we attempt to unwrap null data, compiler will panic
-  // let professor_comments_vector_unwrapped = professor_comments_vector_wrapped.unwrap();
-  // println!("unwrapped data : {professor_comments_vector_unwrapped:?}");
-  // save_data_to_file(professor_comments_file, &professor_comments_vector_unwrapped).await;
   Ok(ProfessorCommentsVector)
 }
 

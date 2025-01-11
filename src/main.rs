@@ -169,18 +169,34 @@ impl RateMyProfessor {
     }
 
     // actual return type : Result<Vec<ProfessorComments>>
-    pub async fn get_professor_comments(&mut self) -> Result<()>  {
+    pub async fn get_professor_comments(&mut self) -> Result<Vec<ProfessorComments>>  {
         // need to call on two function
         // step 1 : invoke search_professor_id 
         // step 2 : invoke search_professor_comments
         let professor_id = search_professor_id(&self.ProfessorName.clone().unwrap(), &self.CollegeName).await?;
-        println!("retrieved professor id : {0:?}", professor_id.Id);
+        let professor_comments = search_professor_comments(professor_id).await?;
+        // println!("{professor_comments:#?}");     // tested:worked
 
-        Ok(())
+        Ok(professor_comments)
     }
 
     // invoke self.get_professor_comments() and save it
-    // pub async fn get_professor_comments_and_save() -> Result<Vec<ProfessorComments>> {}
+    pub async fn get_professor_comments_and_save(&mut self, file_name : &str) -> Result<Vec<ProfessorComments>>{
+        let professor_comments_data = self.get_professor_comments().await?;
+        let (professor_comments_file, _professor_comments_file_path) = create_file(file_name).await;
+        let professor_comments_vector_wrapped = serde_json::to_string(&professor_comments_data.clone());
+
+        if professor_comments_vector_wrapped.is_err() {
+            println!("Error, failed to serialize data : {}", professor_comments_vector_wrapped.unwrap_err());
+            std::process::exit(1);
+        } 
+        // if we attempt to unwrap null data, compiler will panic
+        let professor_comments_vector_unwrapped = professor_comments_vector_wrapped.unwrap();
+        // println!("unwrapped data : {professor_comments_vector_unwrapped:?}");
+        save_data_to_file(professor_comments_file, &professor_comments_vector_unwrapped).await;
+
+        Ok(professor_comments_data)
+    }
 }
 
 
@@ -194,7 +210,8 @@ pub async fn main() -> Result<()> {
     // println!("{get_teacher_summary:#?}");
     rate_my_professor_instance.set_new_professor_and_college("Hamed Fazli", "City College of New York");
     // println!("{rate_my_professor_instance:#?}");
-    rate_my_professor_instance.get_professor_comments().await?;
+    // println!("{:#?}",rate_my_professor_instance.get_professor_comments().await?);
+    println!("{:#?}",rate_my_professor_instance.get_professor_comments_and_save("professor_comments_data.json").await?);
 
     Ok(())
 }

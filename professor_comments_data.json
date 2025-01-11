@@ -1,0 +1,56 @@
+[
+  {
+    "comment": "He's a really funny professor, but he's also a really harsh grader. I found the material for this course to be pretty difficult to understand on top of his grading style. I must say his grading criteria is clear though. If you ever take this professor for any classes. Expect it to be one your more difficult classes in your course-load.",
+    "class_name": "CSC342",
+    "date": "2024-08-07 19:30:14 +0000 UTC",
+    "rating_tags": "Tough grader--Get ready to read--Test heavy",
+    "difficulty": 5.0,
+    "grade": "A-",
+    "would_take_again": true
+  },
+  {
+    "comment": "He's a nice guy but extremely tough grader. He grades at the end of class, so you don't get any feedback until its time for final grades. The content of this class was extremely tough and he did not compensate in his grading. He could have provided extra credit opportunities or made exams easier, but he felt the need to make everything \"fair\" ",
+    "class_name": "CSC342",
+    "date": "2024-08-05 22:02:15 +0000 UTC",
+    "rating_tags": "Tough grader--Clear grading criteria--Graded by few things",
+    "difficulty": 5.0,
+    "grade": "F",
+    "would_take_again": false
+  },
+  {
+    "comment": "love/hate relationship with fazli. fair but extremely strict at the same time when you get questions wrong in the exam. however, the questions are fair game, all if not most all come from his slides and lectures, just have to pay attention and review heavy. exams total 60% of your grade. course just happens to be challenging. ",
+    "class_name": "CSC342",
+    "date": "2024-08-05 21:22:07 +0000 UTC",
+    "rating_tags": "Tough grader--Lecture heavy--Test heavy",
+    "difficulty": 4.0,
+    "grade": "B-",
+    "would_take_again": true
+  },
+  {
+    "comment": "He has clear grading criteria! But in his exams, he gives surprise questions that are too tough. Attendance was 10% of the grade. Did not curve at all!!! For CS elective, I would not suggest taking this class because of too much pressure and too much reading.",
+    "class_name": "CSc412",
+    "date": "2024-08-05 16:08:33 +0000 UTC",
+    "rating_tags": "Tough grader--Get ready to read--Participation matters",
+    "difficulty": 4.0,
+    "grade": "Rather not say",
+    "would_take_again": true
+  },
+  {
+    "comment": "Again, do not take this professor. Too harsh on grading. Would not curve a lot. Most students had hard time passing the course also his harsh grading made it worst. Attendance was mandatory (10% of the grade).\n\n(Professor, if you are looking at this do change your teaching style and ffs try to pass all your students instead of failing them)",
+    "class_name": "CSC342",
+    "date": "2024-08-05 16:07:59 +0000 UTC",
+    "rating_tags": "Tough grader--Participation matters--Test heavy",
+    "difficulty": 5.0,
+    "grade": "F",
+    "would_take_again": false
+  },
+  {
+    "comment": "Took the class over the summer and professor was very caring and understanding of any concerns we had. His grading criteria was clear and his lectures clarified a lot of confusing topics. He was also the professor for lab and was always present the entire session.",
+    "class_name": "CSC342",
+    "date": "2023-11-08 19:15:55 +0000 UTC",
+    "rating_tags": "Group projects--Clear grading criteria--Accessible outside class",
+    "difficulty": 3.0,
+    "grade": "Not Available",
+    "would_take_again": true
+  }
+]
