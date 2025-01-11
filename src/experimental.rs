@@ -119,10 +119,10 @@ pub struct ProfessorComments {
   pub comment : String,
   pub class_name : String,
   pub date : String,
-  pub rating : f64,
+  pub ratingTags : Option<String>,
   pub difficulty : f64,
   pub grade : Option<String>,
-  pub would_take_again : Option<bool>
+  pub would_take_again : bool
 }
 
 /// retruns ProfessorComments wrapped around Result
@@ -152,12 +152,45 @@ pub async fn search_professor_comments(professorID : ProfessorId) -> Result<()> 
   println!("data length : {length:?}");
   // initialize the vector where the data will be stored
   let mut ProfessorCommentsVector : Vec<ProfessorComments> = Vec::with_capacity(length.clone());
+
+  // TODO : Save returned data to a JSON file as well for cleanliness
   for index in 0..length {
     // example of how to retrieve the comments
     let comments_data : String = serde_json::from_str(&comments_subsection[index]["node"]["comment"].to_string())?;
 
-    println!("{:?}", &comments_subsection[index]);
+    // construct the struct
+    // TODO : define a function to abstract away the repetitivesness for serde_json::from_str() section
+    let would_take_again : &serde_json::Value = &comments_subsection[index]["node"]["wouldTakeAgain"];
+    // println!("Would take again ? : {would_take_again:?}");
+    // if *would_take_again == serde_json::Value::Null {
+    //   println!("would_take_again is null");
+    // } else {
+    //   println!("would_take_again isn't null");
+    // }
+
+    let professor_comment_instance = ProfessorComments {
+      comment : comments_data,
+
+      class_name : serde_json::from_str(&comments_subsection[index]["node"]["class"].to_string())?,
+
+      date : serde_json::from_str(&comments_subsection[index]["node"]["date"].to_string())?,
+
+      ratingTags : if Some(serde_json::from_str(&comments_subsection[index]["node"]["ratingTags"].to_string())?) == Some("") {Some("N/A".to_owned())} else {Some(serde_json::from_str(&comments_subsection[index]["node"]["ratingTags"].to_string())?)},
+
+      difficulty : serde_json::from_str(&comments_subsection[index]["node"]["difficultyRating"].to_string())?,
+
+      grade : if Some(serde_json::from_str(&comments_subsection[index]["node"]["grade"].to_string())?) == Some("") { Some("Not Available".to_owned()) } else {Some(serde_json::from_str(&comments_subsection[index]["node"]["grade"].to_string())?)},
+      
+      would_take_again : if comments_subsection[index]["node"]["wouldTakeAgain"] == serde_json::Value::Null { false} else {true}
+      // would_take_again : if serde_json::from_str(&comments_subsection[index]["node"]["wouldTakeAgain"].to_string())? { Some(false) } else { Some(true) }
+    };
+    ProfessorCommentsVector.push(professor_comment_instance);
+    // println!("{:#?}", &comments_subsection[index]);
   }
+
+  println!("{:#?}", ProfessorCommentsVector);
+
+
   // println!("{comments_subsection:?}");
   // for index, comment in comments_subsection.enumerate() {
 
