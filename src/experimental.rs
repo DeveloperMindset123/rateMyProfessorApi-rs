@@ -6,6 +6,7 @@ use filepath::FilePath;
 use std::path::PathBuf;
 use std::any::type_name;
 use core::cmp::Ord;
+use std::ptr::null;
 // mod graphql_queries;
 // use graphql_queries::query;
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -18,7 +19,7 @@ pub struct School {
 pub struct TeacherNode {
     pub __typename: String,   // unused variable
 
-    #[serde(rename="avgDifficulty")]            // formatting, matches the current value to what the returned object type would be using this rust attribute
+    #[serde(rename="avgDifficulty")]            
     pub avg_difficulty: f64,
 
     #[serde(rename="avgRating")]
@@ -52,13 +53,13 @@ const API_LINK: &str = "https://www.ratemyprofessors.com/graphql";      // base 
 // TODO : delete later
 // this is just experimental 
 // original query from website
-const query : &str = r#"
-{
-  "query": "query TeacherRatingsPageQuery($id: ID!) { node(id: $id) { __typename ... on Teacher { id legacyId firstName lastName department school { legacyId name city state country id } lockStatus ...StickyHeaderContent_teacher ...RatingDistributionWrapper_teacher ...TeacherInfo_teacher ...SimilarProfessors_teacher ...TeacherRatingTabs_teacher } id } } fragment StickyHeaderContent_teacher on Teacher { ...HeaderDescription_teacher ...HeaderRateButton_teacher } fragment RatingDistributionWrapper_teacher on Teacher { ...NoRatingsArea_teacher ratingsDistribution { total ...RatingDistributionChart_ratingsDistribution } } fragment TeacherInfo_teacher on Teacher { id lastName numRatings ...RatingValue_teacher ...NameTitle_teacher ...TeacherTags_teacher ...NameLink_teacher ...TeacherFeedback_teacher ...RateTeacherLink_teacher ...CompareProfessorLink_teacher } fragment SimilarProfessors_teacher on Teacher { department relatedTeachers { legacyId ...SimilarProfessorListItem_teacher id } } fragment TeacherRatingTabs_teacher on Teacher { numRatings courseCodes { courseName courseCount } ...RatingsList_teacher ...RatingsFilter_teacher } fragment RatingsList_teacher on Teacher { id legacyId lastName numRatings school { id legacyId name city state avgRating numRatings } ...Rating_teacher ...NoRatingsArea_teacher ratings(first: 20) { edges { cursor node { ...Rating_rating id __typename } } pageInfo { hasNextPage endCursor } } } fragment RatingsFilter_teacher on Teacher { courseCodes { courseCount courseName } } fragment Rating_teacher on Teacher { ...RatingFooter_teacher ...RatingSuperHeader_teacher ...ProfessorNoteSection_teacher } fragment NoRatingsArea_teacher on Teacher { lastName ...RateTeacherLink_teacher } fragment Rating_rating on Rating { comment flagStatus createdByUser teacherNote { id } ...RatingHeader_rating ...RatingSuperHeader_rating ...RatingValues_rating ...CourseMeta_rating ...RatingTags_rating ...RatingFooter_rating ...ProfessorNoteSection_rating } fragment RatingHeader_rating on Rating { legacyId date class helpfulRating clarityRating isForOnlineClass } fragment RatingSuperHeader_rating on Rating { legacyId } fragment RatingValues_rating on Rating { helpfulRating clarityRating difficultyRating } fragment CourseMeta_rating on Rating { attendanceMandatory wouldTakeAgain grade textbookUse isForOnlineClass isForCredit } fragment RatingTags_rating on Rating { ratingTags } fragment RatingFooter_rating on Rating { id comment adminReviewedAt flagStatus legacyId thumbsUpTotal thumbsDownTotal thumbs { thumbsUp thumbsDown computerId id } teacherNote { id } ...Thumbs_rating } fragment ProfessorNoteSection_rating on Rating { teacherNote { ...ProfessorNote_note id } ...ProfessorNoteEditor_rating } fragment ProfessorNote_note on TeacherNotes { comment ...ProfessorNoteHeader_note ...ProfessorNoteFooter_note } fragment ProfessorNoteEditor_rating on Rating { id legacyId class teacherNote { id teacherId comment } } fragment ProfessorNoteHeader_note on TeacherNotes { createdAt updatedAt } fragment ProfessorNoteFooter_note on TeacherNotes { legacyId flagStatus } fragment Thumbs_rating on Rating { id comment adminReviewedAt flagStatus legacyId thumbsUpTotal thumbsDownTotal thumbs { computerId thumbsUp thumbsDown id } teacherNote { id } } fragment RateTeacherLink_teacher on Teacher { legacyId numRatings lockStatus } fragment RatingFooter_teacher on Teacher { id legacyId lockStatus isProfCurrentUser ...Thumbs_teacher } fragment RatingSuperHeader_teacher on Teacher { firstName lastName legacyId school { name id } } fragment ProfessorNoteSection_teacher on Teacher { ...ProfessorNote_teacher ...ProfessorNoteEditor_teacher } fragment ProfessorNote_teacher on Teacher { ...ProfessorNoteHeader_teacher ...ProfessorNoteFooter_teacher } fragment ProfessorNoteEditor_teacher on Teacher { id } fragment ProfessorNoteHeader_teacher on Teacher { lastName } fragment ProfessorNoteFooter_teacher on Teacher { legacyId isProfCurrentUser } fragment Thumbs_teacher on Teacher { id legacyId lockStatus isProfCurrentUser } fragment SimilarProfessorListItem_teacher on RelatedTeacher { legacyId firstName lastName avgRating } fragment RatingValue_teacher on Teacher { avgRating numRatings ...NumRatingsLink_teacher } fragment NameTitle_teacher on Teacher { id firstName lastName department school { legacyId name id } ...TeacherDepartment_teacher ...TeacherBookmark_teacher } fragment TeacherTags_teacher on Teacher { lastName teacherRatingTags { legacyId tagCount tagName id } } fragment NameLink_teacher on Teacher { isProfCurrentUser id legacyId firstName lastName school { name id } } fragment TeacherFeedback_teacher on Teacher { numRatings avgDifficulty wouldTakeAgainPercent } fragment CompareProfessorLink_teacher on Teacher { legacyId } fragment TeacherDepartment_teacher on Teacher { department departmentId school { legacyId name id } } fragment TeacherBookmark_teacher on Teacher { id isSaved } fragment NumRatingsLink_teacher on Teacher { numRatings ...RateTeacherLink_teacher } fragment RatingDistributionChart_ratingsDistribution on ratingsDistribution { r1 r2 r3 r4 r5 } fragment HeaderDescription_teacher on Teacher { id legacyId firstName lastName department school { legacyId name city state id } ...TeacherTitles_teacher ...TeacherBookmark_teacher ...RateTeacherLink_teacher ...CompareProfessorLink_teacher } fragment HeaderRateButton_teacher on Teacher { ...RateTeacherLink_teacher ...CompareProfessorLink_teacher } fragment TeacherTitles_teacher on Teacher { department school { legacyId name id } }",
-  "variables": {
-    "id": "your_teacher_id_here"
-  }
-}"#;
+// const query : &str = r#"
+// {
+//   "query": "query TeacherRatingsPageQuery($id: ID!) { node(id: $id) { __typename ... on Teacher { id legacyId firstName lastName department school { legacyId name city state country id } lockStatus ...StickyHeaderContent_teacher ...RatingDistributionWrapper_teacher ...TeacherInfo_teacher ...SimilarProfessors_teacher ...TeacherRatingTabs_teacher } id } } fragment StickyHeaderContent_teacher on Teacher { ...HeaderDescription_teacher ...HeaderRateButton_teacher } fragment RatingDistributionWrapper_teacher on Teacher { ...NoRatingsArea_teacher ratingsDistribution { total ...RatingDistributionChart_ratingsDistribution } } fragment TeacherInfo_teacher on Teacher { id lastName numRatings ...RatingValue_teacher ...NameTitle_teacher ...TeacherTags_teacher ...NameLink_teacher ...TeacherFeedback_teacher ...RateTeacherLink_teacher ...CompareProfessorLink_teacher } fragment SimilarProfessors_teacher on Teacher { department relatedTeachers { legacyId ...SimilarProfessorListItem_teacher id } } fragment TeacherRatingTabs_teacher on Teacher { numRatings courseCodes { courseName courseCount } ...RatingsList_teacher ...RatingsFilter_teacher } fragment RatingsList_teacher on Teacher { id legacyId lastName numRatings school { id legacyId name city state avgRating numRatings } ...Rating_teacher ...NoRatingsArea_teacher ratings(first: 20) { edges { cursor node { ...Rating_rating id __typename } } pageInfo { hasNextPage endCursor } } } fragment RatingsFilter_teacher on Teacher { courseCodes { courseCount courseName } } fragment Rating_teacher on Teacher { ...RatingFooter_teacher ...RatingSuperHeader_teacher ...ProfessorNoteSection_teacher } fragment NoRatingsArea_teacher on Teacher { lastName ...RateTeacherLink_teacher } fragment Rating_rating on Rating { comment flagStatus createdByUser teacherNote { id } ...RatingHeader_rating ...RatingSuperHeader_rating ...RatingValues_rating ...CourseMeta_rating ...RatingTags_rating ...RatingFooter_rating ...ProfessorNoteSection_rating } fragment RatingHeader_rating on Rating { legacyId date class helpfulRating clarityRating isForOnlineClass } fragment RatingSuperHeader_rating on Rating { legacyId } fragment RatingValues_rating on Rating { helpfulRating clarityRating difficultyRating } fragment CourseMeta_rating on Rating { attendanceMandatory wouldTakeAgain grade textbookUse isForOnlineClass isForCredit } fragment RatingTags_rating on Rating { ratingTags } fragment RatingFooter_rating on Rating { id comment adminReviewedAt flagStatus legacyId thumbsUpTotal thumbsDownTotal thumbs { thumbsUp thumbsDown computerId id } teacherNote { id } ...Thumbs_rating } fragment ProfessorNoteSection_rating on Rating { teacherNote { ...ProfessorNote_note id } ...ProfessorNoteEditor_rating } fragment ProfessorNote_note on TeacherNotes { comment ...ProfessorNoteHeader_note ...ProfessorNoteFooter_note } fragment ProfessorNoteEditor_rating on Rating { id legacyId class teacherNote { id teacherId comment } } fragment ProfessorNoteHeader_note on TeacherNotes { createdAt updatedAt } fragment ProfessorNoteFooter_note on TeacherNotes { legacyId flagStatus } fragment Thumbs_rating on Rating { id comment adminReviewedAt flagStatus legacyId thumbsUpTotal thumbsDownTotal thumbs { computerId thumbsUp thumbsDown id } teacherNote { id } } fragment RateTeacherLink_teacher on Teacher { legacyId numRatings lockStatus } fragment RatingFooter_teacher on Teacher { id legacyId lockStatus isProfCurrentUser ...Thumbs_teacher } fragment RatingSuperHeader_teacher on Teacher { firstName lastName legacyId school { name id } } fragment ProfessorNoteSection_teacher on Teacher { ...ProfessorNote_teacher ...ProfessorNoteEditor_teacher } fragment ProfessorNote_teacher on Teacher { ...ProfessorNoteHeader_teacher ...ProfessorNoteFooter_teacher } fragment ProfessorNoteEditor_teacher on Teacher { id } fragment ProfessorNoteHeader_teacher on Teacher { lastName } fragment ProfessorNoteFooter_teacher on Teacher { legacyId isProfCurrentUser } fragment Thumbs_teacher on Teacher { id legacyId lockStatus isProfCurrentUser } fragment SimilarProfessorListItem_teacher on RelatedTeacher { legacyId firstName lastName avgRating } fragment RatingValue_teacher on Teacher { avgRating numRatings ...NumRatingsLink_teacher } fragment NameTitle_teacher on Teacher { id firstName lastName department school { legacyId name id } ...TeacherDepartment_teacher ...TeacherBookmark_teacher } fragment TeacherTags_teacher on Teacher { lastName teacherRatingTags { legacyId tagCount tagName id } } fragment NameLink_teacher on Teacher { isProfCurrentUser id legacyId firstName lastName school { name id } } fragment TeacherFeedback_teacher on Teacher { numRatings avgDifficulty wouldTakeAgainPercent } fragment CompareProfessorLink_teacher on Teacher { legacyId } fragment TeacherDepartment_teacher on Teacher { department departmentId school { legacyId name id } } fragment TeacherBookmark_teacher on Teacher { id isSaved } fragment NumRatingsLink_teacher on Teacher { numRatings ...RateTeacherLink_teacher } fragment RatingDistributionChart_ratingsDistribution on ratingsDistribution { r1 r2 r3 r4 r5 } fragment HeaderDescription_teacher on Teacher { id legacyId firstName lastName department school { legacyId name city state id } ...TeacherTitles_teacher ...TeacherBookmark_teacher ...RateTeacherLink_teacher ...CompareProfessorLink_teacher } fragment HeaderRateButton_teacher on Teacher { ...RateTeacherLink_teacher ...CompareProfessorLink_teacher } fragment TeacherTitles_teacher on Teacher { department school { legacyId name id } }",
+//   "variables": {
+//     "id": "your_teacher_id_here"
+//   }
+// }"#;
 
 /// graphql query to get teacher rating
 /// this query should be executed after retrieving the teacher id
@@ -126,7 +127,7 @@ pub struct ProfessorComments {
   pub would_take_again : bool
 }
 
-/// retruns ProfessorComments wrapped around Result
+/// returns ProfessorComments wrapped around Result
 /// get all comments for a specific professor based on teacher ID
 pub async fn search_professor_comments(professorID : ProfessorId) -> Result<Vec<ProfessorComments>> {
   let professor_id : String = professorID.Id;
@@ -146,8 +147,6 @@ pub async fn search_professor_comments(professorID : ProfessorId) -> Result<Vec<
   let mut comments_data : serde_json::Value = response.json().await.unwrap();
   let mut comments_subsection = comments_data["data"]["node"]["ratings"]["edges"].clone();
   let length = get_json_length(&comments_subsection);
-  // println!("data length : {length:?}");    // no need for unneccessary info
-  // initialize the vector where the data will be stored
   let mut ProfessorCommentsVector : Vec<ProfessorComments> = Vec::with_capacity(length.clone());
 
   // TODO : Save returned data to a JSON file as well for cleanliness
@@ -155,15 +154,8 @@ pub async fn search_professor_comments(professorID : ProfessorId) -> Result<Vec<
     // example of how to retrieve the comments
     let comments_data : String = serde_json::from_str(&comments_subsection[index]["node"]["comment"].to_string())?;
 
-    // construct the struct
-    // TODO : define a function to abstract away the repetitivesness for serde_json::from_str() section
     let would_take_again : &serde_json::Value = &comments_subsection[index]["node"]["wouldTakeAgain"];
-    // println!("Would take again ? : {would_take_again:?}");
-    // if *would_take_again == serde_json::Value::Null {
-    //   println!("would_take_again is null");
-    // } else {
-    //   println!("would_take_again isn't null");
-    // }
+
     let extracted_comments_data : String = serde_json::from_str(&comments_subsection[index]["node"]["comment"].to_string())?;
 
     let extracted_grade : String = serde_json::from_str(&comments_subsection[index]["node"]["grade"].to_string())?;
@@ -174,6 +166,7 @@ pub async fn search_professor_comments(professorID : ProfessorId) -> Result<Vec<
 
     let extracted_difficulty : f64 = serde_json::from_str(&comments_subsection[index]["node"]["difficultyRating"].to_string())?;
     
+    // construct the struct
     let professor_comment_instance = ProfessorComments {
       comment : extracted_comments_data,
       class_name : serde_json::from_str(&comments_subsection[index]["node"]["class"].to_string())?,
@@ -185,15 +178,10 @@ pub async fn search_professor_comments(professorID : ProfessorId) -> Result<Vec<
       would_take_again : if comments_subsection[index]["node"]["wouldTakeAgain"] == serde_json::Value::Null { false} else {true}
     };
     ProfessorCommentsVector.push(professor_comment_instance);
-    // println!("{:#?}", &comments_subsection[index]);
   }
   
   Ok(ProfessorCommentsVector)
 }
-
-// pub parse_json_data(json_data : serde_json::Value, ternary : bool) -> ProfessorComments {
-
-// }
 
 /// retrieve the length of the returned data value using the match operator
 /// function only handles returned datatype from serde_json that are of Array and Object type
@@ -364,6 +352,46 @@ fragment TeacherBookmark_teacher on Teacher {
   id
   isSaved
 }"#;
+
+const TEACHER_LIST_QUERY : &str = r#"query TeacherSearchResultsPageQuery(
+        $query: TeacherSearchQuery!
+        $schoolID: ID
+        $includeSchoolFilter: Boolean!
+    ) {
+        search: newSearch {
+            teachers(query: $query, first: 1000, after: "") {
+                edges {
+                    node {
+                        id
+                        legacyId
+                        firstName
+                        lastName
+                        department
+                        avgRating
+                        numRatings
+                        wouldTakeAgainPercent
+                        avgDifficulty
+                        school {
+                            name
+                            id
+                        }
+                    }
+                }
+                pageInfo {
+                    hasNextPage
+                    endCursor
+                }
+                resultCount
+            }
+        }
+        school: node(id: $schoolID) @include(if: $includeSchoolFilter) {
+            __typename
+            ... on School {
+                name
+            }
+            id
+        }
+    }"#;
 
 const SCHOOL_BODY_QUERY: &str = r#"query NewSearchSchoolsQuery(
   $query: SchoolSearchQuery!
@@ -568,7 +596,7 @@ async fn main() -> Result<()> {
         // this is the correct school id
         let school_id = &school.node.id;
         println!("current school id : {:?}", school_id);
-        // println!("{:?}", school_id);
+        let professor_list_returned = get_professor_list_by_school(school_id).await?;   
         // let professors = search_professors_at_school_id("Jean Frechet", &school.node.id).await?;
         // println!("Professors : {:?}", professors);
         // for professor in professors {
@@ -714,7 +742,7 @@ pub async fn search_school(school_name: &str) -> Result<Vec<SchoolSearch>> {
 
     for (index, data) in results.clone().into_iter().enumerate() {
       println!("current index is : {:?}", index);
-      println!("results are {:?}", data.node.name);
+      // println!("results are {:?}", data.node.name);
       if data.node.name == school_name {
         let data_json = serde_json::to_string(&data);
 
@@ -754,4 +782,93 @@ pub async fn create_file(fileName : &str) -> (fs::File, PathBuf) {
   let mut file = fs::File::create(fileName).unwrap();
   let filePath = file.path().unwrap();    // Ok("/path/to/file") -> "/path/to/file"
   (file, filePath)
+}
+
+// define the struct that will handle retrieving the list of professors given a specific college
+// need to call upon search_school to retrieve the list
+// struct shares a lot of similarities with some of the other existing structs
+// automatically enabled to handle null data since large quantity of data is being gathered here
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ProfessorList {
+  pub id : Option<String>,
+  pub legacy_id : Option<String>,
+  pub first_name : Option<String>,
+  pub last_name : Option<String>,
+  pub department : Option<String>,
+  pub avg_rating : Option<f64>,
+  pub num_rating : Option<i32>,
+  pub avg_difficulty : Option<f64>
+}
+
+/// retrieves a list of professors for a specific college based on the college id
+/// original result type : Result<Vec<ProfessorList>>
+pub async fn get_professor_list_by_school(college_id : &str) -> Result<Vec<ProfessorList>> {
+  let mut professor_list : Vec<ProfessorList> = Vec::new();
+  let client = reqwest::Client::new();
+  let payload = serde_json::json!({
+    "query" : TEACHER_LIST_QUERY,
+    "variables" : {
+      "query" : {
+        "text" : "",    // empty : ensures all professor list is retrieved
+        "schoolID" : college_id,
+        "fallback" : true,
+        "departmentID" : null,
+      },
+      "schoolID" : college_id,
+      "includeSchoolFilter" : true
+    },
+  });
+  let response = client.post(API_LINK).headers(get_headers()).json(&payload).send().await?;
+  if !response.status().is_success() {
+    return Err(anyhow::anyhow!("Network response from RMP not OK"));
+  }
+
+  let mut professor_list_raw : serde_json::Value = response.json().await?;
+  
+  // break down the data to the edges array so we can itereate over it
+  let professor_list_edges = professor_list_raw["data"]["search"]["teachers"]["edges"].clone();
+
+  // for edge in professor_list_edges {
+  //   println!("{edge:#?}");
+  // }
+
+  // retrieve the length and iterate over the range to construct the vector that will store the data
+  let professor_list_edges_length = get_json_length(&professor_list_edges);
+  for curr_index in 0..professor_list_edges_length {
+
+    let unique_id : Option<String> = Some(serde_json::from_str(&professor_list_edges[curr_index]["node"]["id"].to_string())?);
+
+    let legacy_id : Option<String> = Some(serde_json::from_str(&professor_list_edges[curr_index]["node"]["id"].to_string())?);
+
+    let first_name : Option<String> = Some(serde_json::from_str(&professor_list_edges[curr_index]["node"]["firstName"].to_string())?);
+
+    let last_name : Option<String> = Some(serde_json::from_str(&professor_list_edges[curr_index]["node"]["lastName"].to_string())?);
+
+    let department : Option<String> = Some(serde_json::from_str(&professor_list_edges[curr_index]["node"]["department"].to_string())?);
+
+    let avg_rating : Option<f64> = Some(serde_json::from_str(&professor_list_edges[curr_index]["node"]["avgRating"].to_string())?);
+
+    let num_rating : Option<i32> = Some(serde_json::from_str(&professor_list_edges[curr_index]["node"]["numRatings"].to_string())?);
+
+    let avg_difficulty : Option<f64> = Some(serde_json::from_str(&professor_list_edges[curr_index]["node"]["avgDifficulty"].to_string())?);
+
+    // TODO : construct list
+    let professor_list_instance = ProfessorList {
+      id : unique_id,
+      legacy_id : legacy_id,
+      first_name : first_name,
+      last_name : last_name,
+      department : department,
+      avg_rating : avg_rating,
+      num_rating : num_rating,
+      avg_difficulty : avg_difficulty,
+    };
+    professor_list.push(professor_list_instance);
+  }
+  // println!("{professor_list:#?}");
+
+  Ok(professor_list)
+  // Ok(())
+
+
 }

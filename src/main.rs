@@ -181,7 +181,7 @@ impl RateMyProfessor {
     }
 
     // invoke self.get_professor_comments() and save it
-    pub async fn get_professor_comments_and_save(&mut self, file_name : &str) -> Result<Vec<ProfessorComments>>{
+    pub async fn get_professor_comments_and_save(&mut self, file_name : &str) -> Result<Vec<ProfessorComments>> {
         let professor_comments_data = self.get_professor_comments().await?;
         let (professor_comments_file, _professor_comments_file_path) = create_file(file_name).await;
         let professor_comments_vector_wrapped = serde_json::to_string(&professor_comments_data.clone());
@@ -197,6 +197,26 @@ impl RateMyProfessor {
 
         Ok(professor_comments_data)
     }
+
+    pub async fn get_professor_list(&mut self) -> Result<Vec<ProfessorList>> {
+        // retrieve the college id
+        let colleges = search_school(&self.CollegeName).await;
+        let mut college_id : String = "".to_owned();     // initialize empty string to store the data
+        if let Some(college) = colleges.unwrap().first() {
+            college_id = college.node.id.to_owned(); // ???
+        }
+
+        // after updating the value for the collge id, call on the college to retrieve professor list
+        
+        Ok(get_professor_list_by_school(&college_id).await?)
+    }
+
+    pub async fn get_professor_list_and_save(&mut self, file_name : &str) -> Result<Vec<ProfessorList>> {
+        let professor_list_data = self.get_professor_list().await?;
+        let (created_file, _file_path) = create_file(file_name).await;
+        save_data_to_file(created_file, &serde_json::to_string(&professor_list_data).unwrap()).await;
+        Ok(professor_list_data)
+    }
 }
 
 
@@ -204,14 +224,14 @@ impl RateMyProfessor {
 #[tokio::main]
 pub async fn main() -> Result<()> {
     let mut rate_my_professor_instance = RateMyProfessor::construct_college_and_professor("City College of New York", "Douglas Troeger");
-    // // let data = rate_my_professor_instance.get_college_info().await?;    // tested:worked
 
     // let mut get_teacher_summary = rate_my_professor_instance.get_teacher_summary_and_save(true, "all_teacher_data.json").await?;        // tested : worked
     // println!("{get_teacher_summary:#?}");
-    rate_my_professor_instance.set_new_professor_and_college("Hamed Fazli", "City College of New York");
+    rate_my_professor_instance.set_new_professor_and_college("Alejandro Crawford", "Baruch College");
     // println!("{rate_my_professor_instance:#?}");
     // println!("{:#?}",rate_my_professor_instance.get_professor_comments().await?);
-    println!("{:#?}",rate_my_professor_instance.get_professor_comments_and_save("professor_comments_data.json").await?);
-
+    // println!("{:#?}",rate_my_professor_instance.get_professor_comments_and_save("professor_comments_data.json").await?);     // tested and worked
+    // println!("{:#?}",rate_my_professor_instance.get_professor_list().await?);
+    rate_my_professor_instance.get_professor_list_and_save("baruch_college_professor_list.json").await;
     Ok(())
 }
