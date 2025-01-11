@@ -129,7 +129,7 @@ pub struct ProfessorComments {
 /// retruns ProfessorComments wrapped around Result
 /// get all comments for a specific professor based on teacher ID
 pub async fn search_professor_comments(professorID : ProfessorId) -> Result<Vec<ProfessorComments>> {
-  let professor_id : String = professorID.id;
+  let professor_id : String = professorID.Id;
   let client = reqwest::Client::new();
   let payload = serde_json::json!({
     "query" : TEACHER_COMMENTS,
@@ -189,17 +189,17 @@ pub async fn search_professor_comments(professorID : ProfessorId) -> Result<Vec<
   }
   
 
-  let (professor_comments_file, _professor_comments_file_path) = create_file("professor_comments.json").await;
-  let professor_comments_vector_wrapped = serde_json::to_string(&ProfessorCommentsVector.clone());
+  // let (professor_comments_file, _professor_comments_file_path) = create_file("professor_comments.json").await;
+  // let professor_comments_vector_wrapped = serde_json::to_string(&ProfessorCommentsVector.clone());
 
-  if professor_comments_vector_wrapped.is_err() {
-    println!("Error, failed to serialize data : {}", professor_comments_vector_wrapped.unwrap_err());
-    std::process::exit(1);
-  } 
-  // if we attempt to unwrap null data, compiler will panic
-  let professor_comments_vector_unwrapped = professor_comments_vector_wrapped.unwrap();
-  println!("unwrapped data : {professor_comments_vector_unwrapped:?}");
-  save_data_to_file(professor_comments_file, &professor_comments_vector_unwrapped).await;
+  // if professor_comments_vector_wrapped.is_err() {
+  //   println!("Error, failed to serialize data : {}", professor_comments_vector_wrapped.unwrap_err());
+  //   std::process::exit(1);
+  // } 
+  // // if we attempt to unwrap null data, compiler will panic
+  // let professor_comments_vector_unwrapped = professor_comments_vector_wrapped.unwrap();
+  // println!("unwrapped data : {professor_comments_vector_unwrapped:?}");
+  // save_data_to_file(professor_comments_file, &professor_comments_vector_unwrapped).await;
   Ok(ProfessorCommentsVector)
 }
 
@@ -219,7 +219,7 @@ pub fn get_json_length(value : &serde_json::Value) -> usize {
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct ProfessorId {
-  id : String
+  pub Id : String
 }
 /// returns the id of the professor given the professor name and school name 
 pub async fn search_professor_id(professor_name : &str, school_name : &str) -> Result<ProfessorId> {
@@ -269,7 +269,7 @@ pub async fn search_professor_id(professor_name : &str, school_name : &str) -> R
   println!("sample id is : {:?}", sample_id_string);
   // println!("teacher is is : {teacher_id:?}");
   Ok(ProfessorId {
-    id : sample_id_string.to_owned()
+    Id : sample_id_string.to_owned()
   })
 }
 
@@ -555,7 +555,7 @@ async fn main() -> Result<()> {
     // example code for testing how get_school_id works
     // passed as intended!
     let retrieved_professor_id : ProfessorId = search_professor_id("Jie Wei","CUNY City College of New York").await.unwrap();
-    println!("The retrieved school Id is --> {:?}", retrieved_professor_id.id);
+    println!("The retrieved school Id is --> {:?}", retrieved_professor_id.Id);
     search_professor_comments(retrieved_professor_id).await?;
 
 

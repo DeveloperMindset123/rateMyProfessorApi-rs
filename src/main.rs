@@ -7,8 +7,8 @@ use predicates::prelude::*;
 
 #[derive(Deserialize, Serialize, Debug, Clone)]
 pub struct RateMyProfessor {
-    CollegeName : String,
-    ProfessorName : Option<String>
+    pub CollegeName : String,
+    pub ProfessorName : Option<String>
 }
 
 
@@ -167,6 +167,20 @@ impl RateMyProfessor {
         self.set_new_college(college_name);
         self.set_new_professor(professor_name);
     }
+
+    // actual return type : Result<Vec<ProfessorComments>>
+    pub async fn get_professor_comments(&mut self) -> Result<()>  {
+        // need to call on two function
+        // step 1 : invoke search_professor_id 
+        // step 2 : invoke search_professor_comments
+        let professor_id = search_professor_id(&self.ProfessorName.clone().unwrap(), &self.CollegeName).await?;
+        println!("retrieved professor id : {0:?}", professor_id.Id);
+
+        Ok(())
+    }
+
+    // invoke self.get_professor_comments() and save it
+    // pub async fn get_professor_comments_and_save() -> Result<Vec<ProfessorComments>> {}
 }
 
 
@@ -180,6 +194,7 @@ pub async fn main() -> Result<()> {
     // println!("{get_teacher_summary:#?}");
     rate_my_professor_instance.set_new_professor_and_college("Hamed Fazli", "City College of New York");
     // println!("{rate_my_professor_instance:#?}");
+    rate_my_professor_instance.get_professor_comments().await?;
 
     Ok(())
 }
