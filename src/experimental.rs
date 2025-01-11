@@ -186,22 +186,7 @@ pub async fn search_professor_comments(professorID : ProfessorId) -> Result<Vec<
     ProfessorCommentsVector.push(professor_comment_instance);
     // println!("{:#?}", &comments_subsection[index]);
   }
-  // println!("{:#?}", ProfessorCommentsVector);
-  // println!("{comments_subsection:?}");
-  // for index, comment in comments_subsection.enumerate() {
-
-  // }
-  // let data :serde_json::Value = response.json().await?;
-  // let professor_data = data.get("data").unwrap().clone();
-  // let ratings = professor_data.get("ratings").unwrap();
-  // let edges = ratings.get("edges");
-  // println!("professor_data : {:?}", professor_data); 
-
-  // let mut more_comment_subsection = comments_subsection.as_object_mut();
-  // println!("retrieved comments info : {:?}", comments_data_lenght);
-  // for comments in comments_subsection.clone().into_iter() {
-  //   println!("comments are : {:?}", comments);
-  // }
+  
 
   let (professor_comments_file, _professor_comments_file_path) = create_file("professor_comments.json").await;
   let professor_comments_vector_wrapped = serde_json::to_string(&ProfessorCommentsVector.clone());
