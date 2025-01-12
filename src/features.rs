@@ -458,7 +458,6 @@ pub async fn search_professors_at_school_id(
     professor_name: &str,
     school_id: &str,
 ) -> Result<Vec<TeacherSearch>> {
-    println!("current school id is : {:?}", school_id);
     let client = reqwest::Client::new();
     
     let variables = serde_json::json!({
