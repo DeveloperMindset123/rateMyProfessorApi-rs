@@ -12,13 +12,22 @@ use std::path::PathBuf;
 use std::any::type_name;
 use core::cmp::Ord;
 
-
+/// Struct to hold college info.
+/// 
+/// # Description
+/// - stores the unique ID of the college in alphanumerical string.
+/// - stores the name of the college corresponding to the unique identifier.
+/// - This struct is passed in as a datatype to the `TeacherNode` struct's school field.
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct School {
     pub id: String,   
     pub name: String,
 }
 
+/// Struct to hold professor's info.
+/// 
+/// # Description:
+/// - This struct defines the layout of the data for summary regarding a specific professor. 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct TeacherNode {
     pub __typename: String,   // unused variable
@@ -51,11 +60,15 @@ pub struct TeacherNode {
     pub would_take_again_percent: f64,
 }
 
-const API_LINK: &str = "https://www.ratemyprofessors.com/graphql";      // base URL
+/// Base Graphql URL.
+pub const API_LINK: &str = "https://www.ratemyprofessors.com/graphql";      // base URL
 
-// graphql query to get teacher rating
-// this query should be executed after retrieving the teacher id
-const TEACHER_COMMENTS : &str = r#"
+/// Graphql query that retrieves comments.
+/// 
+/// # Description:
+/// - This query should be executed after retrieving the teacher id.
+/// - This query retrieves all the comments corresponding to a particular professor.
+pub const TEACHER_COMMENTS : &str = r#"
 query TeacherRatingsPageQuery($id: ID!) {
         node(id: $id) {
             __typename
@@ -63,7 +76,7 @@ query TeacherRatingsPageQuery($id: ID!) {
                 firstName
                 lastName
                 department
-                ratings(first: 50) {
+                ratings(first: 1000) {
                     edges {
                         node {
                             comment
@@ -82,7 +95,12 @@ query TeacherRatingsPageQuery($id: ID!) {
     }
 "#;
 
-const GET_TEACHER_ID_QUERY : &str = r#"
+/// Query to fetch Teacher ID.
+/// 
+/// # Description:
+/// - This query is passed into the payload to fetch the unique identifier of a particular professor.
+/// - The returned data contains the professor's ID, which can be passed into the function `search_professor_comments("professor id")`.
+pub const GET_TEACHER_ID_QUERY : &str = r#"
   query TeacherSearchResultsPageQuery(
         $query: TeacherSearchQuery!
         $schoolID: ID
@@ -108,19 +126,42 @@ const GET_TEACHER_ID_QUERY : &str = r#"
         }
     }
 "#;
+/// Defines Professor Comments Structure.
+/// 
+/// # Description:
+/// - Struct that holds the information pertaining to the comments related to a particular professor within a given university.
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct ProfessorComments {
+  /// Comment an user has made about the particular professor.
   pub comment : String,
+
+  /// Name of the class that has been taught by the particular professor. (i.e. CSC 322, MATH 308)
   pub class_name : String,
+
+  /// UTC timestamp during which this particular comment has been made.
   pub date : String,
+
+  /// Rating tags that corresponds to this professor (i.e. Lecture Heavy, Tough Grader).
   pub rating_tags : String,
+
+  /// Floating point value between `1.0-5.0` to represent the difficulty level of the particular course.
   pub difficulty : f64,
+
+  /// Grade the particular user have recieved for the class (i.e. A+, B, C-)
   pub grade : String,
+
+  /// Boolean value representing the student's willingness to retake the professor again, indicates whether they enjoyed the course or not.
   pub would_take_again : bool
 }
 
 // returns ProfessorComments wrapped around Result
-// get all comments for a specific professor based on teacher ID
+/// Get all comments for a specific professor based on teacher ID.
+/// # Description:
+/// - Asynchronous function that is used to retrieve the list of comments associated with a particular professor.
+/// 
+/// - Requires the ID of the professor which can be retrieved using the `search_professor_id("college name", "school name").await?` function.
+/// 
+/// - This function returns a Vector of ProfessorComment struct data wrapped around Result.
 pub async fn search_professor_comments(professorID : ProfessorId) -> Result<Vec<ProfessorComments>> {
   let professor_id : String = professorID.Id;
   let client = reqwest::Client::new();
@@ -175,8 +216,7 @@ pub async fn search_professor_comments(professorID : ProfessorId) -> Result<Vec<
   Ok(ProfessorCommentsVector)
 }
 
-// retrieve the length of the returned data value using the match operator
-// function only handles returned datatype from serde_json that are of Array and Object type
+/// Calculates the length of valid `JSON` data.
 pub fn get_json_length(value : &serde_json::Value) -> usize {
   match value {
     serde_json::Value::Array(arr) => arr.len(),
@@ -185,11 +225,16 @@ pub fn get_json_length(value : &serde_json::Value) -> usize {
   }
 }
 
+/// Stores Professor's ID.
+/// 
+/// 
+/// Struct within which the ID of the professor is held in String format.
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct ProfessorId {
+  /// Unique ID represented in String format consisting of alphanumerical values. (i.e. `"VGVhY2hlci0xOTgxNzY0"`)
   pub Id : String
 }
-// returns the id of the professor given the professor name and school name 
+/// Returns the id of the professor given the professor name and school name.
 pub async fn search_professor_id(professor_name : &str, school_name : &str) -> Result<ProfessorId> {
   
   // writting null in graphql is equivalent to writting None in python
@@ -236,7 +281,7 @@ pub async fn search_professor_id(professor_name : &str, school_name : &str) -> R
   })
 }
 
-//  this function is a helper function of search_professor_id (it will be called within the function body)
+/// Higher Order Function that filters out and returns college ID directly.
 pub async fn get_school_id(school_name : &str) -> String {
   let schools = search_school(school_name).await.unwrap();
   let mut school_id : &str = "";
@@ -247,8 +292,12 @@ pub async fn get_school_id(school_name : &str) -> String {
     school_id.to_owned()
 }
  
-/// graphql queries should be json based strings
-const TEACHER_BODY_QUERY: &str = r#"query TeacherSearchResultsPageQuery(
+/// Graphql query used to search for a professor.
+/// 
+/// # Description
+/// - This variable is being passed in as a payload value within the asynchronous function `search_professors_at_school_id("Name of professor", "ID of university")`.
+/// - In order to retrieve the university id, the asynchronous `search_school("Name of university")` should be called.
+pub const TEACHER_BODY_QUERY: &str = r#"query TeacherSearchResultsPageQuery(
   $query: TeacherSearchQuery!
   $schoolID: ID
   $includeSchoolFilter: Boolean!
@@ -325,7 +374,12 @@ fragment TeacherBookmark_teacher on Teacher {
   isSaved
 }"#;
 
-const TEACHER_LIST_QUERY : &str = r#"query TeacherSearchResultsPageQuery(
+/// Graphql query used to retrieve list of professors within a given college.
+/// 
+/// # Description
+/// - This query is passed into the payload and will return the first 1000 professors.
+/// - An arbitarily large number has been chosen to gurantee that list of all the professors within a given college can be fetched successfully.
+pub const TEACHER_LIST_QUERY : &str = r#"query TeacherSearchResultsPageQuery(
         $query: TeacherSearchQuery!
         $schoolID: ID
         $includeSchoolFilter: Boolean!
@@ -407,13 +461,17 @@ const SCHOOL_BODY_QUERY: &str = r#"query NewSearchSchoolsQuery(
   }
 }"#;
 
-
+/// Struct that inherits `TeacherNode` for the `node` field.
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct TeacherSearch {
     pub cursor: String,
     pub node: TeacherNode,
 }
 
+/// Struct to hold professor Rating.
+/// 
+/// # Description:
+/// - Defines the layout of the object that will store the information regarding the rating of a particular professor.
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq, PartialOrd)]
 pub struct ProfessorRating {
     #[serde(rename="avgRating")]
@@ -437,9 +495,12 @@ pub struct ProfessorRating {
     pub link: String,
 }
 
-/// HeaderValue::from_static : convert a static string to a HeaderValue
-/// This function will not perform any copying, becasue the goal is to ensure that the string is checked to ensure that no invalid characters are present and that only visible ASCII characters are permitted.
-fn get_headers() -> HeaderMap {
+/// Returns API headers.
+/// 
+/// # Description:
+/// - `HeaderValue::from_static` : convert a static string to a HeaderValue.
+/// - This function will not perform any copying, becasue the goal is to ensure that the string is checked to ensure that no invalid characters are present and that only visible ASCII characters are permitted.
+pub fn get_headers() -> HeaderMap {
     let mut headers = HeaderMap::new();
     headers.insert("User-Agent", HeaderValue::from_static("Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:129.0) Gecko/20100101 Firefox/129.0"));
     headers.insert("Accept", HeaderValue::from_static("*/*"));
@@ -453,7 +514,12 @@ fn get_headers() -> HeaderMap {
     headers.insert("Priority", HeaderValue::from_static("u=4"));
     headers
 }
-
+/// Searches for a particular professor within a given school.
+/// 
+/// # Description:
+/// - Requires two parameters.
+/// - Parameter 1 : Name of the professor.
+/// - Parameter 2 : Unique Identifier for the particular college.
 pub async fn search_professors_at_school_id(
     professor_name: &str,
     school_id: &str,
@@ -495,6 +561,11 @@ pub async fn search_professors_at_school_id(
     Ok(results)
 }
 
+/// Retrieves Professor Summary.
+/// 
+/// # Description:
+/// - This function takes in the name of the professor and the unique college ID.
+/// - Returns a summary regarding the particular professor.
 pub async fn get_professor_rating_at_school_id(
     professor_name: &str,
     school_id: &str,
@@ -558,12 +629,27 @@ async fn main() -> Result<()> {
     Ok(())
 }
 
+/// Definition for University Department.
+/// 
+/// # Description:
+/// - Department struct to hold the unique ID associated with a Department
+/// within a given university.
+/// 
+/// - This struct is mapped to the school Node Struct.
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Department {
-    pub id: String,
+    /// Unique ID associated with the department.
+    pub id: String,   
+
+    /// Name of the Department (i.e. Music, World Humanities, Computer Science).
     pub name: String,
 }
 
+/// Struct to store college summary.
+/// 
+/// # Description:
+/// - This struct stores detailed information regarding a specific college/univeristy.
+/// - This struct is passed in as a datatype wthin the SchoolNode struct.
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct SchoolSummary {
     #[serde(rename = "campusCondition")]
@@ -589,7 +675,11 @@ pub struct SchoolSummary {
     #[serde(rename = "socialActivities")]
     pub social_activities: Option<f64>,
 }
-
+/// Struct to hold additional college info.
+/// 
+/// # Description:
+/// - Extension to School struct, used to define the layout of information that will be returned when searching for a particular college.
+/// - This struct is passed into the `SchoolSearch` to improve readabillity.
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct SchoolNode {
     #[serde(rename = "avgRatingRounded")]
@@ -606,12 +696,24 @@ pub struct SchoolNode {
     pub summary: SchoolSummary,     // nested struct
 }
 
+/// Higher Order struct.
+/// 
+/// # Description:
+/// - Return type stored as vector data for `search_school` function.
+/// - This struct inherits `SchoolNode` as a datatype for the `node` field.
+/// - `SchoolNode` inherits `SchoolSummary` within the `summary` field.
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct SchoolSearch {
     pub cursor: String,
     pub node: SchoolNode,
 }
 
+/// Searches and returns a list of institutes with similar names.
+/// 
+/// # Description:
+/// - Returns multiple schools with similar names.
+/// - For example, if the input was `City College`, it could be `City College of New York`, `City College of San Francisco`, `New York City College of Technology`, etc.
+/// - Other function will parse through the list to filter out the specific school the user is looking for.
 pub async fn search_school(school_name: &str) -> Result<Vec<SchoolSearch>> {
     // initialize the reqwest client that will be used to make the API calls
     let client = reqwest::Client::new();
@@ -691,37 +793,63 @@ fn print_type_of<T>(_ : &T) {
   println!("{}", std::any::type_name::<T>());
 }
 
-// function to save the content
-// returns nothing, inplace modification
+/// Saves string data to a particular file.
+/// 
+/// # Description:
+/// - This function will accept any valid file and write the string data as bytes within the given file.
+/// - This function does not return anything if operation is successful.
 pub async fn save_data_to_file(mut file : fs::File, data : &str) {
   file.write_all(data.as_bytes()).expect("failed to write json data to file")
 }
 
 // function returns a tuple of values -> the file and the path to the file
+/// Creates a file within the current working directory.
+/// 
+/// # Description:
+/// - Returns two values : the file that has been created and the path where the file is located.
 pub async fn create_file(fileName : &str) -> (fs::File, PathBuf) {
   let mut file = fs::File::create(fileName).unwrap();
   let filePath = file.path().unwrap();    // Ok("/path/to/file") -> "/path/to/file"
   (file, filePath)
 }
 
-// define the struct that will handle retrieving the list of professors given a specific college
-// need to call upon search_school to retrieve the list
-// struct shares a lot of similarities with some of the other existing structs
-// automatically enabled to handle null data since large quantity of data is being gathered here
+/// Struct to hold List of Professors.
+/// 
+/// # Description:
+/// - Defines the struct that will handle retrieving the list of professors given a specific college.
+/// - Automatically enabled to handle null data since large quantity of data is being gathered.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ProfessorList {
+
+  /// Unique ID associated with a particular professor.
   pub id : Option<String>,
+
+  /// Old unique ID that was used to identify a particular professor.
   pub legacy_id : Option<String>,
+
+  /// First name of the Professor.
   pub first_name : Option<String>,
+
+  /// Last name of the Professor.
   pub last_name : Option<String>,
+
+  /// Department which the professor is affiliated with.
   pub department : Option<String>,
+
+  /// Floating point value ranging from `1.0-5.0` on a scale of satisfaction.
   pub avg_rating : Option<f64>,
+
+  /// Number of students that have provided feedback on this professor.
   pub num_rating : Option<i32>,
+
+  /// Floating point value between `1.0-5.0` representing the difficulty level of their courses.
   pub avg_difficulty : Option<f64>
 }
 
-/// retrieves a list of professors for a specific college based on the college id
-/// original result type : Result<Vec<ProfessorList>>
+/// Returns list of professors.
+///
+/// # Description: 
+/// - Retrieves a list of professors for a specific college based on the college id.
 pub async fn get_professor_list_by_school(college_id : &str) -> Result<Vec<ProfessorList>> {
   let mut professor_list : Vec<ProfessorList> = Vec::new();
   let client = reqwest::Client::new();

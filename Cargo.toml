@@ -1,6 +1,6 @@
 [package]
 name = "rate_my_professor_api_rs"
-version = "0.1.4"
+version = "0.1.5"
 edition = "2021"
 license = "MIT OR Apache-2.0"
 description = "A cargo package that serves as an API wrapper over Rate My Professor. Users can get information about a particular college, get information about a particular professor, retrieve list of all the professors within a current college registered within Rate My Professor and fetch comments corresponding to a particular professor within a specific university."

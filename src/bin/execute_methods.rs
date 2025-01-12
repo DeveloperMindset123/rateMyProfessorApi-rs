@@ -14,10 +14,14 @@ pub async fn main() -> Result<()> {
     // let mut college_summary = rate_my_professor_instance.get_college_info().await?;
     // println!("{college_summary:?}");
 
-    let mut rate_my_professor_instance = RateMyProfessor::construct_college_and_professor("City College of New York", "Hamed Fazli");
+    let mut rate_my_professor_instance = RateMyProfessor::construct_college_and_professor("City College of New York", "Douglas Troeger");
 
-    let mut teacher_summary = rate_my_professor_instance.get_teacher_summary_and_save(false, "Hamed_Fazli.json").await?;
-    println!("{teacher_summary:#?}");
+    let professor_comments = rate_my_professor_instance.get_professor_comments().await?;
+
+    println!("{professor_comments:#?}");
+
+    // let mut teacher_summary = rate_my_professor_instance.get_teacher_summary_and_save(false, "Hamed_Fazli.json").await?;
+    // println!("{teacher_summary:#?}");
     // let mut list_of_professors = rate_my_professor_instance.get_professor_list().await?;
     // println!("{list_of_professors:#?}");
     // rate_my_professor_instance.set_new_professor("Ross Greenberg");         // in-place modification
