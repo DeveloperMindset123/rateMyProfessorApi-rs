@@ -21,7 +21,7 @@ A lightweight API wrapper around [Rate My Professor](https://www.ratemyprofessor
 - The list below covers all the dependancies needed.
 ```toml
 [dependancies]
-rate_my_professor_api_rs = "0.1.3"
+rate_my_professor_api_rs = "0.1.5"
 tokio = { version = "1", features = ["full"] }
 reqwest = { version = "0.12.12", features = ["json"] }
 anyhow = "1.0.95"
