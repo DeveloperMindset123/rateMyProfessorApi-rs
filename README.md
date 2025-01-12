@@ -207,7 +207,7 @@ async fn main() {
 
 - However, if that doesn't work or solve your problem, or if there's a feature request you would like to make, you can reach out to me in the following:
 
-**Gmail**: [dasa60196@gmail.com](dasa60196@gmail.com)
+**Gmail**: dasa60196@gmail.com
 
 **Discord** : the1sand0s (Just send a friend request and message me)
 ### License
