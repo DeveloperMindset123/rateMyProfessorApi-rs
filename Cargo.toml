@@ -1,15 +1,17 @@
 [package]
 name = "rate_my_professor_api_rs"
-version = "0.1.0"                 # in development
+version = "0.1.1"                                                           # in development
 edition = "2021"
+license = "MIT OR Apache-2.0"
+repository = "https://github.com/DeveloperMindset123/rateMyProfessorApi-rs"
+readme = "./README.md"
+
 
 [dependencies]
 actix = "0.13.5"
 actix-rt = "2.10.0"
 actix-web = { version = "4.9.0" }
 awc = { version = "3.5.1", features = ["openssl"] }
-diesel = { version = "2.2.6", features = ["postgres"] }
-dotenvy = "0.15.7"
 openssl = "0.10.68"
 serde = { version = "1.0.217", features = ["derive"] }
 serde_json = "1.0.135"
@@ -20,17 +22,18 @@ tokio-macros = "2.5.0"
 filepath = "0.2.0"
 predicates = "3.1.3"
 
-[[bin]]
-name = "api-test"
-path = "src/api.rs"
+
+# [[bin]]
+# name = "api-features"
+# path = "src/features.rs"
 
 [[bin]]
-name = "api-experimental"
-path = "src/experimental.rs"
+name = "test-bin-methods"
+path = "src/bin/execute_methods.rs"
 
 [[bin]]
-name = "test-main"
-path = "src/main.rs"
+name = "test-bin-features"
+path = "src/bin/execute_features.rs"
 
 [lib]
 name = "rateMyProfessorApi_rs"

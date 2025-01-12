@@ -1,5 +1,6 @@
-mod experimental;
-use experimental::*;        // wildcard placeholder
+#[allow(unused_imports)]
+#[allow(unused_doc_comments)]
+use crate::features::*;        // wildcard placeholder
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
 use tokio;
@@ -14,7 +15,24 @@ pub struct RateMyProfessor {
 
 impl RateMyProfessor {
     // this will specify no professor at the moment
-    // constructor 1
+    /// # Constructor 1 
+    /// Takes in only 1 parameter, which is the name of the college. Name of professor will simply be set to a empty string and can be adjusted using the set_new_professor("name of professor") method
+    /// 
+    /// ```rust
+    /// // working code example
+    /// use rateMyProfessorApi_rs::*;
+    /// 
+    /// // while #[tokio::main] is not neccessary for this particular constructor since it's synchronous
+    /// // It is still recommended since a few of the methods are synchronous
+    /// // example WITHOUT [tokio::main] attribute
+    /// use anyhow::Result;
+    /// use rateMyProfessorApi_rs::methods::RateMyProfessor;        // import struct
+    /// 
+    /// fn main() {
+    ///     let mut rate_my_professor_instance = RateMyProfessor::construct_college("Queens College");
+    ///     println!("{rate_my_professor_instance:#?}");
+    /// }
+    /// ```
     pub fn construct_college(college_name : &str) -> Self {
         RateMyProfessor {
             CollegeName : college_name.to_owned(),
@@ -22,7 +40,7 @@ impl RateMyProfessor {
         }
     }
 
-    // constructor 2
+    /// constructor 2, takes in 2 parameters, first parameter is the name of the college and the second parameter is the name of the professor
     pub fn construct_college_and_professor(college_name : &str, professor_name : &str) -> Self {
         RateMyProfessor {
             CollegeName : college_name.to_owned(),
@@ -30,75 +48,49 @@ impl RateMyProfessor {
         }
     }
 
-    // method 1, retrieves college info
-    // retrurn type should match search_school
+    /// method 1, retrieves college info, this method does not require name of a professor
     pub async fn get_college_info(&mut self) -> Result<Vec<SchoolSearch>> {
-        experimental::search_school(&self.CollegeName).await        // this function automatically handles this
+        search_school(&self.CollegeName).await        // this function automatically handles this
     }
 
-    // NOTE : would be best to rename this as "search_professor_by_name"
-
-    // main return type : Result<Vec<ProfessorRating>>
-    // retrieve_all_result is a boolean flag that will specify whether user wants just the specific data or the entire data to be returned
+    /// retrieve_all_result is a boolean flag that will specify whether user wants just the specific data or the entire data to be returned
+    /// 
+    /// If retrieve_all_result is set to true, then any similar naming professor's data within the particular college will also be returned
     pub async fn get_teacher_summary(&mut self, retrieve_all_result : bool) -> Result<Vec<ProfessorRating>> {
-        // TODO : needs to handle null values in the event that ProfessorName is null
-        // NOTE : all inner functions must be set to await method as well, otherwise, data will not be successful during retrieval
-        // should return a set of values
         let mut result_data : Vec<ProfessorRating> = Vec::new();        // stores filtered results
         let mut rating_data_holder : Vec<ProfessorRating> = Vec::new();     // stores all results
 
         // check if the name of the profesosr is empty or not
-        // TODO : test if this can bypass the return type explicitly
         if self.ProfessorName == Some("".to_owned()) {
             eprintln!("You must first provide a name of a professor before attempting to get summary on a professor!.\n HINT : use the .set_new_professor('Name of Professor') to set the name of new professor before reattempting this method.");
             std::process::exit(1);
         } else {
-            // assuming professor name has indeed been provided
-            // I also need to retrieve the school id from the search_school function
-
-            // search for the school once again
-            let schools = experimental::search_school(&self.CollegeName).await;
+            let schools = search_school(&self.CollegeName).await;
             let unwrap_professor_name = self.ProfessorName.clone().unwrap();
-            // extract the school ID
             if let Some(school) = schools.unwrap().first() {
-                // println!("Found school : {} in {}, {}", school.node.name, school.node.city, school.node.city);
                 let school_id = &school.node.id;
 
                 // pass in the school ID to search for the professor
                 // search for the specific professors
                 // then pass in their corresponding data into the get method
                 // the search function takes in 2 parameters : name of professor and the corresponding school_id
-                let professor_list = experimental::search_professors_at_school_id(&unwrap_professor_name, school_id).await;
+                let professor_list = search_professors_at_school_id(&unwrap_professor_name, school_id).await;
                 for professor in &professor_list?.clone() {
 
                     // get_professor_rating_at_school_id takes in two parameters, the name of the professor, which search_professors_at_school_id returns in the format of first and last name which needs to be merged back together
 
                     // as well as referencing the school_id (the type is &str)
-                    let current_professor_rating = experimental::get_professor_rating_at_school_id(&format!("{} {}", professor.node.first_name, professor.node.last_name), &school_id).await.unwrap();
-
-                    // println!("{:#?}", current_professor_rating);
+                    let current_professor_rating = get_professor_rating_at_school_id(&format!("{} {}", professor.node.first_name, professor.node.last_name), &school_id).await.unwrap();
                     rating_data_holder.push(current_professor_rating);
-
                 }
                 
-                // println!("{rating_data_holder:#?}");
-
                 for rating in &rating_data_holder {
                     // adds 2 layer of filtering
                     if unwrap_professor_name.to_owned() == rating.formatted_name && self.CollegeName == rating.college_name {
                         result_data.push(rating.clone());
                     } 
-                    // else {
-                    //     if result_data.is_empty() {
-                    //         if unwrap_professor_name.to_owned() == rating.formatted_name {
-                    //             result_data.push(rating.clone());
-                    //         }
-                    //     }
-                    // }
                 }
 
-                // check and verify if the hard filtering didn't work
-                // then we apply a single layer of filtering instead
                 if result_data.is_empty() {
                     for rating in &rating_data_holder {
                         if unwrap_professor_name.clone().to_owned() == rating.formatted_name.clone() {
@@ -108,26 +100,7 @@ impl RateMyProfessor {
                 }
                 result_data.sort_by(|a,b| a.partial_cmp(b).expect("Failed to sort the vector"));         // in-place sorting
 
-                // NOTE : this isn't fully working.
-                result_data.dedup();        // inplace modification removing duplicate consecutive elements
-                // let set : std::collections::BTreeSet<_> = result_data.drain(..).collect();
-                // for x in set {
-                //     if let Some(last) = result_data.last() {
-                //         if predicate(last, &x) { continue; }
-                //     }
-                //     result_data.push(x);
-                // }
-
-                // let set: BTreeSet<_> = vec.drain(..).collect();
-                // for x in set {
-                // // data comes in in sorted order so you can further
-                // // process adjacenct elements like this
-                //     if let Some(last) = vec.last() {
-                //         if predicate(last, &x) { continue; }
-                //         }
-                //     vec.push(x);
-                //     }
-                    println!("{result_data:#?}");
+                result_data.dedup();
             }
         }
 
@@ -140,20 +113,21 @@ impl RateMyProfessor {
         }
     }
 
-    // this will do all the same functionality as get_teacher_summary but also save the resulting data
+    /// this will do all the same functionality as get_teacher_summary but also save the resulting data within a JSON file
     // user can specify the file path they want in string format
-    // everything needs to be asynchronous, otherwise, data retrieval will not be successful
-    // will create the file in the immediate directory
+    /// function needs to be asynchronous, otherwise, data retrieval will not be successful
+    /// will create the file in the current working directory
+    /// make sure to specify a JSON file for the file_name parameter (i.e. "some_json_file.json")
     pub async fn get_teacher_summary_and_save(&mut self, retrieve_all_result : bool, file_name : &str) -> Result<Vec<ProfessorRating>> {
         let result = self.get_teacher_summary(retrieve_all_result).await?;
-        let (file, file_path) = experimental::create_file(file_name).await;
-        experimental::save_data_to_file(file, &serde_json::to_string(&result).unwrap()).await;
+        let (file, file_path) = create_file(file_name).await;
+        save_data_to_file(file, &serde_json::to_string(&result).unwrap()).await;
         Ok(result)
     }
 
-    // simple setter that will update the current professor
-    // synchronous method is sufficieint
-    // function shouldn't return anything, should simply save
+    /// simple setter that will update the current professor
+    /// synchronous method is sufficieint
+    /// function shouldn't return anything, should simply save
     pub fn set_new_professor(&mut self, professor_name : &str) {
         self.ProfessorName = Some(professor_name.to_owned());
     }
@@ -168,14 +142,13 @@ impl RateMyProfessor {
         self.set_new_professor(professor_name);
     }
 
-    // actual return type : Result<Vec<ProfessorComments>>
+    /// returns list of comments corresponding to the current professor
     pub async fn get_professor_comments(&mut self) -> Result<Vec<ProfessorComments>>  {
-        // need to call on two function
+        // calls on two function
         // step 1 : invoke search_professor_id 
         // step 2 : invoke search_professor_comments
         let professor_id = search_professor_id(&self.ProfessorName.clone().unwrap(), &self.CollegeName).await?;
         let professor_comments = search_professor_comments(professor_id).await?;
-        // println!("{professor_comments:#?}");     // tested:worked
 
         Ok(professor_comments)
     }
@@ -189,10 +162,10 @@ impl RateMyProfessor {
         if professor_comments_vector_wrapped.is_err() {
             println!("Error, failed to serialize data : {}", professor_comments_vector_wrapped.unwrap_err());
             std::process::exit(1);
-        } 
+        }
+
         // if we attempt to unwrap null data, compiler will panic
         let professor_comments_vector_unwrapped = professor_comments_vector_wrapped.unwrap();
-        // println!("unwrapped data : {professor_comments_vector_unwrapped:?}");
         save_data_to_file(professor_comments_file, &professor_comments_vector_unwrapped).await;
 
         Ok(professor_comments_data)
@@ -220,18 +193,40 @@ impl RateMyProfessor {
 }
 
 
-// this should be moved to "examples" directory
+/// working examples
+/// ```rust
+/// #[tokio::main]
+/// pub async fn main() -> Result<()> {
+
+///     // constructor 2 example
+///     let mut rate_my_professor_instance = RateMyProfessor::construct_college_and_professor("City College of New York", "Douglas Troeger");
+///     println!("newly instantiated object : {rate_my_professor_instance:#?}\n\n");
+
+///     // setter example
+///     rate_my_professor_instance.set_new_professor_and_college("Alejandro Crawford", "Baruch College");
+///     println!("{rate_my_professor_instance:#?}\n");
+
+
+///     // instantiated method example
+///     let professor_list = rate_my_professor_instance.get_professor_list_and_save("baruch_college_professor_list.json").await;
+///     println!("{professor_list:#?}");
+///     Ok(())
+/// }
+/// ```
 #[tokio::main]
 pub async fn main() -> Result<()> {
-    let mut rate_my_professor_instance = RateMyProfessor::construct_college_and_professor("City College of New York", "Douglas Troeger");
 
-    // let mut get_teacher_summary = rate_my_professor_instance.get_teacher_summary_and_save(true, "all_teacher_data.json").await?;        // tested : worked
-    // println!("{get_teacher_summary:#?}");
+    // constructor 2 example
+    let mut rate_my_professor_instance = RateMyProfessor::construct_college_and_professor("City College of New York", "Douglas Troeger");
+    println!("newly instantiated object : {rate_my_professor_instance:#?}\n\n");
+
+    // setter example
     rate_my_professor_instance.set_new_professor_and_college("Alejandro Crawford", "Baruch College");
-    // println!("{rate_my_professor_instance:#?}");
-    // println!("{:#?}",rate_my_professor_instance.get_professor_comments().await?);
-    // println!("{:#?}",rate_my_professor_instance.get_professor_comments_and_save("professor_comments_data.json").await?);     // tested and worked
-    // println!("{:#?}",rate_my_professor_instance.get_professor_list().await?);
-    rate_my_professor_instance.get_professor_list_and_save("baruch_college_professor_list.json").await;
+    println!("{rate_my_professor_instance:#?}\n");
+
+
+    // instantiated method example
+    let professor_list = rate_my_professor_instance.get_professor_list_and_save("baruch_college_professor_list.json").await;
+    println!("{professor_list:#?}");
     Ok(())
 }
