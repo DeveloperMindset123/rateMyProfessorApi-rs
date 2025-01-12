@@ -290,7 +290,7 @@ impl RateMyProfessor {
     /// ```rust
     /// 
     /// // add the following within the main function from above (or any asynchronous function)
-    /// let rate_my_professor_instance.get_professor_comments().await?;
+    /// let mut professor_comments = rate_my_professor_instance.get_professor_comments().await?;
     /// println!("{professor_comments:#?}");
     /// 
     /// // sample output:

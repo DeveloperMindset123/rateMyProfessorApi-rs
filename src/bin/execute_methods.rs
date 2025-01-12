@@ -8,11 +8,18 @@ use rateMyProfessorApi_rs::methods::RateMyProfessor;
 #[tokio::main]
 pub async fn main() -> Result<()> {
     // constructor 1 example
-    let mut rate_my_professor_instance = RateMyProfessor::construct_college("CUNY Queens College");
-    // println!("Object instance before setter method update : {rate_my_professor_instance:#?}");
+    // let mut rate_my_professor_instance = RateMyProfessor::construct_college("CUNY Queens College");
+    // // println!("Object instance before setter method update : {rate_my_professor_instance:#?}");
 
-    let mut list_of_professors = rate_my_professor_instance.get_professor_list().await?;
-    println!("{list_of_professors:#?}");
+    // let mut college_summary = rate_my_professor_instance.get_college_info().await?;
+    // println!("{college_summary:?}");
+
+    let mut rate_my_professor_instance = RateMyProfessor::construct_college_and_professor("City College of New York", "Hamed Fazli");
+
+    let mut teacher_summary = rate_my_professor_instance.get_teacher_summary_and_save(false, "Hamed_Fazli.json").await?;
+    println!("{teacher_summary:#?}");
+    // let mut list_of_professors = rate_my_professor_instance.get_professor_list().await?;
+    // println!("{list_of_professors:#?}");
     // rate_my_professor_instance.set_new_professor("Ross Greenberg");         // in-place modification
     // println!("Object instance after setter method update : {rate_my_professor_instance:#?}");
 
