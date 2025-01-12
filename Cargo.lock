@@ -1420,7 +1420,7 @@ dependencies = [
 
 [[package]]
 name = "rate_my_professor_api_rs"
-version = "0.1.4"
+version = "0.1.5"
 dependencies = [
  "actix",
  "actix-rt",
