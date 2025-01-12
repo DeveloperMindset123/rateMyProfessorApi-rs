@@ -11,7 +11,7 @@ A lightweight API wrapper around [Rate My Professor](https://www.ratemyprofessor
 
 - **Retrieve Comments** : Users can retrieve list of all the comments that students has made for a particular professor wtihin a particular college. 
 
-[API Documentation](https://docs.rs/rate_my_professor_api_rs/0.1.2/rateMyProfessorApi_rs/) : To get better understanding of implementation details.
+[API Documentation](https://docs.rs/rate_my_professor_api_rs/0.1.3/rateMyProfessorApi_rs/) : To get better understanding of implementation details.
 
 ### Examples:
 **NOTE** : There are more examples that can be found within the API Documentation.
@@ -203,7 +203,7 @@ async fn main() {
 
 ```
 ### Getting Help
-- If the [API Documentation](https://docs.rs/rate_my_professor_api_rs/0.1.2/rateMyProfessorApi_rs/) doesn't help and you happen to be stuck on something, there's also examples within the **bin** folder containing executable code.
+- If the [API Documentation](https://docs.rs/rate_my_professor_api_rs/0.1.3/rateMyProfessorApi_rs/) doesn't help and you happen to be stuck on something, there's also examples within the **bin** folder containing executable code.
 
 - However, if that doesn't work or solve your problem, or if there's a feature request you would like to make, you can reach out to me in the following:
 
