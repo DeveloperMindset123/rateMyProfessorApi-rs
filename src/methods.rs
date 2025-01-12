@@ -24,7 +24,7 @@ impl RateMyProfessor {
     /// 
     /// ```rust
     /// // working code example
-    /// use rateMyProfessorApi_rs::*;
+    /// use tokio;
     /// use anyhow::Result;
     /// use rateMyProfessorApi_rs::methods::RateMyProfessor;        // import struct
     /// 
@@ -37,7 +37,7 @@ impl RateMyProfessor {
     /// }
     /// 
     /// // example WITH [tokio::main] attribute
-    /// [tokio::main]
+    /// #[tokio::main]
     /// async fn main() -> Result<()> {
     ///     let mut rate_my_professor_instance = RateMyProfessor::construct_college("Queens College");
     ///     println!("{rate_my_professor_instance:#?}");    // check results
