@@ -1,15 +1,4 @@
-// TODO : import all relevant modules here
-pub fn add(left: u64, right: u64) -> u64 {
-    left + right
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn it_works() {
-        let result = add(2, 2);
-        assert_eq!(result, 4);
-    }
-}
+/// Check here for internal implementations
+pub mod features;        
+/// Check here for core functionalities
+pub mod methods;        
